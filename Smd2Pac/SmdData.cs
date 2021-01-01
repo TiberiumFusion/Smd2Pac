@@ -10,12 +10,8 @@ namespace TiberiumFusion.Smd2Pac
     public class SmdData
     {
         public int Version { get; private set; } = 0;
-        
-        // Creates an SmdData from an SMD file
-        public static SmdData FromFile(string filepath)
-        {
-            return new SmdData(File.ReadAllLines(filepath));
-        }
+        public SmdSkeleton Skeleton { get; private set; }
+        public SmdTimeline Timeline { get; private set; }
 
         private string ErrInvalid(string message)
         {
@@ -32,6 +28,12 @@ namespace TiberiumFusion.Smd2Pac
         private string ErrUnknown(int lineNum, string message)
         {
             return "Unknown SMD format at line " + lineNum + ". " + message;
+        }
+
+        // Creates SmdData from an SMD file
+        public static SmdData FromFile(string filepath)
+        {
+            return new SmdData(File.ReadAllLines(filepath));
         }
 
         public SmdData(string[] rawLines)
@@ -109,6 +111,7 @@ namespace TiberiumFusion.Smd2Pac
             if (dbSkeleton.Count == 2)
                 throw new Exception(ErrInvalid(dbSkeleton[0].LineNumber, "\"skeleton\" data block is empty."));
 
+
             ///// Process node block to build skeleton hierarchy
             // Bone definition order does NOT have to be sequential, so we'll set up the parenting AFTER discovering all bones
             // Crowbar always writes bones sequentially, but other software might be lazy and write them out of order
@@ -124,7 +127,7 @@ namespace TiberiumFusion.Smd2Pac
 
                 int boneID = -1;
                 if (!int.TryParse(linetextParts[0], out boneID))
-                    throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is invalid; bone ID is not an integer."));
+                    throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is invalid; bone ID is not a valid number."));
 
                 string boneName = linetextParts[1].Trim('"'); // Trim the " quotes that always present but useless
                 if (string.IsNullOrWhiteSpace(boneName))
@@ -134,7 +137,7 @@ namespace TiberiumFusion.Smd2Pac
 
                 int boneParentID = -2;
                 if (!int.TryParse(linetextParts[2], out boneParentID))
-                    throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is invalid; bone parent ID is not an integer."));
+                    throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is invalid; bone parent ID is not a valid number."));
 
                 SmdBone bone = new SmdBone(boneID, boneName, boneParentID);
                 bone.SmdSourceLine = line;
@@ -177,10 +180,114 @@ namespace TiberiumFusion.Smd2Pac
             }
 
             // Create skeleton object
-            SmdSkeleton skeleton = new SmdSkeleton();
-            skeleton.RootBone = rootBone;
+            Skeleton = new SmdSkeleton(bones, rootBone);
 
-            Console.WriteLine(skeleton);
+
+            ///// Process skeleton block to find animations frames
+            List<List<NumberedLine>> timeBlocks = new List<List<NumberedLine>>();
+            List<NumberedLine> buildTimeBlock = null;
+            bool startedFirstBlockBuild = false;
+            int lastTimeNumber = int.MinValue;
+            for (int i = 1; i < dbSkeleton.Count - 1; i++)
+            {
+                NumberedLine line = dbSkeleton[i];
+                string linetext = line.Text.Trim();
+                string[] linetextParts = linetext.Split(' ');
+                if (linetext.Length >= 4 && linetext.Substring(0, 4) == "time")
+                {
+                    if (linetextParts.Length != 2)
+                        throw new Exception(ErrInvalid(line.LineNumber, "Invalid \"time\" block header."));
+
+                    int timeNumber = -1;
+                    if (!int.TryParse(linetextParts[1], out timeNumber))
+                        throw new Exception(ErrInvalid(line.LineNumber, "\"time\" block number is not a valid number."));
+
+                    if (timeNumber <= lastTimeNumber)
+                        throw new Exception(ErrInvalid(line.LineNumber, "\"time\" block number is not sequential to the previous time block."));
+                    lastTimeNumber = timeNumber;
+
+                    if (!startedFirstBlockBuild)
+                    {
+                        buildTimeBlock = new List<NumberedLine>();
+                        startedFirstBlockBuild = true;
+                    }
+                    else
+                    {
+                        //if (buildTimeBlock.Count < 2) // aka just the "time" header and no actual bone pose data
+                        //    throw new Exception(ErrInvalid(line.LineNumber, "Empty \"time\" block."));
+                            // This might actually be valid SMD. The Valve wiki isn't clear about this case.
+
+                        timeBlocks.Add(buildTimeBlock);
+                        buildTimeBlock = new List<NumberedLine>();
+                    }
+                }
+                buildTimeBlock.Add(line);
+            }
+            timeBlocks.Add(buildTimeBlock);
+
+            // Create timeline for animation
+            Timeline = new SmdTimeline(Skeleton);
+            // Add all explicit frames
+            foreach (List<NumberedLine> timeBlock in timeBlocks)
+            {
+                SmdTimelineFrame frame = new SmdTimelineFrame();
+
+                NumberedLine header = timeBlock[0];
+                string[] headertextParts = header.Text.Trim().Split(' ');
+                frame.FrameTime = (float)int.Parse(headertextParts[1]);
+
+                for (int i = 1; i < timeBlock.Count; i++)
+                {
+                    NumberedLine boneline = timeBlock[i];
+                    string bonelinetext = boneline.Text.Trim();
+                    string[] bonelinetextParts = bonelinetext.Split(' ');
+
+                    if (bonelinetextParts.Length != 7)
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Bone pose data is an invalid format."));
+
+                    int boneID = -1;
+                    if (!int.TryParse(bonelinetextParts[0], out boneID))
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone ID is not a valid number."));
+
+                    float bonePosX = 0f;
+                    if (!float.TryParse(bonelinetextParts[1], out bonePosX))
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone X translation is not a valid number."));
+                    float bonePosY = 0f;
+                    if (!float.TryParse(bonelinetextParts[2], out bonePosY))
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone Y translation is not a valid number."));
+                    float bonePosZ = 0f;
+                    if (!float.TryParse(bonelinetextParts[3], out bonePosZ))
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone Z translation is not a valid number."));
+
+                    float boneRotX = 0f;
+                    if (!float.TryParse(bonelinetextParts[4], out boneRotX))
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone X rotation is not a valid number."));
+                    float boneRotY = 0f;
+                    if (!float.TryParse(bonelinetextParts[5], out boneRotY))
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone Y rotation is not a valid number."));
+                    float boneRotZ = 0f;
+                    if (!float.TryParse(bonelinetextParts[6], out boneRotZ))
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone Z rotation is not a valid number."));
+                    
+                    SmdBonePose bonePose = new SmdBonePose();
+                    
+                    SmdBone targetBone = null;
+                    if (!Skeleton.BoneByID.TryGetValue(boneID, out targetBone))
+                        throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; no bone exists with the ID " + boneID + "."));
+
+                    foreach (SmdBonePose existingBonePose in frame.ExplicitBonePoses)
+                        if (existingBonePose.Bone == targetBone)
+                            throw new Exception(ErrInvalid(boneline.LineNumber, "Duplicate bone pose."));
+
+                    bonePose.Bone = targetBone;
+                    bonePose.Position = new Vector3(bonePosX, bonePosY, bonePosZ);
+                    bonePose.Rotation = new Vector3(boneRotX, boneRotY, boneRotZ);
+
+                    frame.ExplicitBonePoses.Add(bonePose);
+                }
+
+                Timeline.AddFrame(frame); // Frames will be stored sequentially as they were defined in the SDM and any pose interpolation will occur on demand if needed
+            }
         }
     }
 }

@@ -26,6 +26,7 @@ namespace TiberiumFusion.Smd2Pac
         private static Dictionary<string, ArgDef> ValidArgs = new Dictionary<string, ArgDef>()
         {
             ["smd"] = new ArgDef(1, "--smd \"path\\to\\my file.smd\""),
+            ["output"] = new ArgDef(1, "--output \"path\\to\\my new pac3 anim data.txt\""),
             ["ignore-bones"] = new ArgDef(-1, "--ignore-bones ValveBiped.Bip01_L_Thigh ValveBiped.Bip01_L_Calf")
         };
 
@@ -103,6 +104,10 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     SourceSmdFilePath = argMultiValues[0];
                 }
+                else if (argKeyword == "output")
+                {
+                    OutputPacAnimDataPath = argMultiValues[0];
+                }
                 else if (argKeyword == "ignore-bones")
                 {
                     IgnoreBones.AddRange(argMultiValues);
@@ -115,6 +120,11 @@ namespace TiberiumFusion.Smd2Pac
             if (!File.Exists(SourceSmdFilePath))
                 throw new Exception("File specified by --smd argument does not exist.");
 
+            if (OutputPacAnimDataPath == null)
+            {
+                int extSpot = SourceSmdFilePath.LastIndexOf('.');
+                OutputPacAnimDataPath = SourceSmdFilePath.Substring(0, extSpot) + "_pac3data.txt"; // Default output filename
+            }
         }
     }
 }

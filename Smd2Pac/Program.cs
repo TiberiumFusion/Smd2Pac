@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace TiberiumFusion.Smd2Pac
     {
         static void Main(string[] args)
         {
+            ///// Input reading
             LaunchArgs launchArgs = null;
             try
             {
@@ -22,8 +24,8 @@ namespace TiberiumFusion.Smd2Pac
                 Print(e.Message, 1, "- ");
                 return;
             }
-
-
+            
+            ///// SMD parsing
             SmdData smdData = null;
             try
             {
@@ -37,6 +39,35 @@ namespace TiberiumFusion.Smd2Pac
             catch (Exception e)
             {
                 Print("[!!!] Error parsing SMD file [!!!]");
+                Print(e.Message, 1, "- ");
+            }
+
+            ///// Translation to PAC3 animation 
+            PacCustomAnimation pacCustomAnim = null;
+            try
+            {
+                pacCustomAnim = PacCustomAnimation.FromSmdData(smdData);
+            }
+            catch (Exception e)
+            {
+                Print("[!!!] Error translating SMD sequence to PAC3 custom animation [!!!]");
+                Print(e.Message, 1, "- ");
+            }
+
+            ///// Write output
+            try
+            {
+                var serializerSettings = new JsonSerializerSettings();
+                serializerSettings.FloatParseHandling = FloatParseHandling.Double;
+                serializerSettings.FloatFormatHandling = FloatFormatHandling.String;
+                serializerSettings.Formatting = Formatting.None;
+                serializerSettings.Converters.Add(new NoScientificNotationBS());
+                string pacAnimInterchange = JsonConvert.SerializeObject(pacCustomAnim, serializerSettings);
+                File.WriteAllText(launchArgs.OutputPacAnimDataPath, pacAnimInterchange);
+            }
+            catch (Exception e)
+            {
+                Print("[!!!] Error writing PAC3 custom animation data to file [!!!]");
                 Print(e.Message, 1, "- ");
             }
 

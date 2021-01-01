@@ -8,11 +8,17 @@ namespace TiberiumFusion.Smd2Pac
 {
     public class SmdSkeleton
     {
+        public List<SmdBone> Bones;
         public SmdBone RootBone;
-        
-        public SmdSkeleton()
-        {
+        public Dictionary<int, SmdBone> BoneByID = new Dictionary<int, SmdBone>();
 
+        public SmdSkeleton(List<SmdBone> bones, SmdBone rootBone)
+        {
+            Bones = bones;
+            RootBone = rootBone;
+
+            foreach (SmdBone bone in bones)
+                BoneByID[bone.ID] = bone;
         }
 
         public override string ToString()

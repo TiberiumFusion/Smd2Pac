@@ -16,5 +16,10 @@ namespace TiberiumFusion.Smd2Pac
             Text = text;
             LineNumber = lineNumber;
         }
+
+        public override string ToString()
+        {
+            return "(" + LineNumber + ") " + Text;
+        }
     }
 }
