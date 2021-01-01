@@ -13,8 +13,9 @@ namespace TiberiumFusion.Smd2Pac
         public float MR = 0f; // +Y translation (right/east)
         public float MU = 0f; // +Z translation (up)
 
-        public float RF = 0f; // +X rotation (roll)
-        public float RR = 0f; // +Y rotation (yaw)
-        public float RU = 0f; // +Z rotation (pitch)
+        public float RF = 0f; // pitch
+        public float RR = 0f; // yaw
+        public float RU = 0f; // roll
+            // Yes these are out of order b/c either source or pac3 is weird
     }
 }

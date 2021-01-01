@@ -44,7 +44,7 @@ namespace TiberiumFusion.Smd2Pac
                 lines.Add(new NumberedLine(rawLines[i], i + 1));
 
             // Strip comments and empty lines
-            lines.RemoveAll(l => l.Text.StartsWith("//") || string.IsNullOrWhiteSpace(l.Text));
+            lines.RemoveAll(l => l.Text.TrimStart().StartsWith("//") || string.IsNullOrWhiteSpace(l.Text));
 
             if (lines.Count == 0)
                 throw new Exception("SMD file has no data.");
@@ -288,6 +288,13 @@ namespace TiberiumFusion.Smd2Pac
 
                 Timeline.AddFrame(frame); // Frames will be stored sequentially as they were defined in the SDM and any pose interpolation will occur on demand if needed
             }
+
+            Print("- " + bones.Count + " bones, " + Timeline.ExplicitFrames.Count + " frames of animation", 1);
+        }
+
+        private static void Print(string message, int indentLevel = 0, string bullet = null)
+        {
+            Program.Print(message, indentLevel, bullet);
         }
     }
 }

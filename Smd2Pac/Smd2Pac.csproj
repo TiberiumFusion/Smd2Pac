@@ -60,6 +60,7 @@
     <Compile Include="SmdSkeleton.cs" />
     <Compile Include="SmdTimeline.cs" />
     <Compile Include="SmdTimelineFrame.cs" />
+    <Compile Include="Translator.cs" />
     <Compile Include="Vector3.cs" />
   </ItemGroup>
   <ItemGroup>

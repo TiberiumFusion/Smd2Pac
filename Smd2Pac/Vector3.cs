@@ -25,6 +25,89 @@ namespace TiberiumFusion.Smd2Pac
             Y = y;
             Z = z;
         }
+        
+        public static bool operator ==(Vector3 a, Vector3 b)
+        {
+            return    a.X == b.X
+                   && a.Y == b.Y
+                   && a.Z == b.Z;
+        }
+        
+        public static bool operator !=(Vector3 a, Vector3 b)
+        {
+            return !(a == b);
+        }
+        
+        public static Vector3 operator +(Vector3 a, Vector3 b)
+        {
+            a.X += b.X;
+            a.Y += b.Y;
+            a.Z += b.Z;
+            return a;
+        }
+        
+        public static Vector3 operator -(Vector3 a)
+        {
+            return new Vector3(-a.X, -a.Y, -a.Z);
+        }
+        
+        public static Vector3 operator -(Vector3 a, Vector3 b)
+        {
+            a.X -= b.X;
+            a.Y -= b.Y;
+            a.Z -= b.Z;
+            return a;
+        }
+        
+        public static Vector3 operator *(Vector3 a, Vector3 b)
+        {
+            a.X *= b.X;
+            a.Y *= b.Y;
+            a.Z *= b.Z;
+            return a;
+        }
+        
+        public static Vector3 operator *(Vector3 a, float b)
+        {
+            a.X *= b;
+            a.Y *= b;
+            a.Z *= b;
+            return a;
+        }
+        
+        public static Vector3 operator *(float a, Vector3 b)
+        {
+            b.X *= a;
+            b.Y *= a;
+            b.Z *= a;
+            return b;
+        }
+        
+        public static Vector3 operator /(Vector3 a, Vector3 b)
+        {
+            a.X /= b.X;
+            a.Y /= b.Y;
+            a.Z /= b.Z;
+            return a;
+        }
+        
+        public static Vector3 operator /(Vector3 a, float b)
+        {
+            a.X /= b;
+            a.Y /= b;
+            a.Z /= b;
+            return a;
+        }
+
+        public static Vector3 operator /(float a, Vector3 b)
+        {
+            return new Vector3(a / b.X, a / b.Y, a / b.Z);
+        }
+
+        public float Length()
+        {
+            return (float)Math.Sqrt((X * X) + (Y * Y) + (Z * Z));
+        }
 
         public override string ToString()
         {

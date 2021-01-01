@@ -11,7 +11,9 @@ namespace TiberiumFusion.Smd2Pac
     {
         public string SourceSmdFilePath { get; private set; } = null;
         public string OutputPacAnimDataPath { get; private set; } = null;
+        public int PacAnimDataOptimizeLevel { get; private set; } = 0;
         public List<string> IgnoreBones { get; private set; } = new List<string>();
+        public Dictionary<string, Vector3> BoneFixups { get; private set; } = new Dictionary<string, Vector3>();
 
         private class ArgDef
         {
@@ -27,7 +29,9 @@ namespace TiberiumFusion.Smd2Pac
         {
             ["smd"] = new ArgDef(1, "--smd \"path\\to\\my file.smd\""),
             ["output"] = new ArgDef(1, "--output \"path\\to\\my new pac3 anim data.txt\""),
-            ["ignore-bones"] = new ArgDef(-1, "--ignore-bones ValveBiped.Bip01_L_Thigh ValveBiped.Bip01_L_Calf")
+            ["ignore-bones"] = new ArgDef(-1, "--ignore-bones ValveBiped.Bip01_L_Thigh ValveBiped.Bip01_L_Calf"),
+            ["optimize"] = new ArgDef(1, "--optimize 1"),
+            ["bone-fixup"] = new ArgDef(4, "--bone-fixup ValveBiped.Bip01_Pelvis 0 0 90"),
         };
 
         private static string StringIsArgKeyword(string s)
@@ -80,18 +84,20 @@ namespace TiberiumFusion.Smd2Pac
                                 else
                                 {
                                     if (argMultiValues.Count < argDef.RequiresValue)
-                                        throw new Exception("Invalid value for argument --" + argKeyword + ". Example usage: " + argDef.Example);
+                                        throw new Exception("Not enough values for argument --" + argKeyword + ". Example usage: " + argDef.Example);
                                     else if (argMultiValues.Count > argDef.RequiresValue)
                                         throw new Exception("Too many values for argument --" + argKeyword + ". Example usage: " + argDef.Example);
                                 }
                             }
                             
                             argMultiValues.Add(parseArgs[t]);
+                            if (argMultiValues.Count == argDef.RequiresValue)
+                                break;
 
                             if (!anyCount && t == parseArgs.Count - 1 && argMultiValues.Count < argDef.RequiresValue)
                                 throw new Exception("Insufficient number of values for argument --" + argKeyword + ". Example usage: " + argDef.Example);
                         }
-                        i = t - 1;
+                        i = t;
                     }   
                 }
                 else
@@ -108,18 +114,42 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     OutputPacAnimDataPath = argMultiValues[0];
                 }
+                else if (argKeyword == "optimize")
+                {
+                    int optimizeLevel = 0;
+                    if (!int.TryParse(argMultiValues[0], out optimizeLevel))
+                        throw new Exception("Invalid value for argument --" + argKeyword + " (not an integer). Example usage: " + ValidArgs[argKeyword].Example);
+                    PacAnimDataOptimizeLevel = optimizeLevel;
+                }
                 else if (argKeyword == "ignore-bones")
                 {
-                    IgnoreBones.AddRange(argMultiValues);
+                    if (argMultiValues.Count > 0)
+                        IgnoreBones.AddRange(argMultiValues);
+                }
+                else if (argKeyword == "bone-fixup")
+                {
+                    float rotX = 0f;
+                    float rotY = 0f;
+                    float rotZ = 0f;
+                    if (!float.TryParse(argMultiValues[1], out rotX))
+                        throw new Exception("Invalid X rotation for argument --" + argKeyword + " (not a number). Example usage: " + ValidArgs[argKeyword].Example);
+                    if (!float.TryParse(argMultiValues[2], out rotY))
+                        throw new Exception("Invalid X rotation for argument --" + argKeyword + " (not a number). Example usage: " + ValidArgs[argKeyword].Example);
+                    if (!float.TryParse(argMultiValues[3], out rotZ))
+                        throw new Exception("Invalid X rotation for argument --" + argKeyword + " (not a number). Example usage: " + ValidArgs[argKeyword].Example);
+                    BoneFixups[argMultiValues[0]] = new Vector3(rotX, rotY, rotZ);
                 }
             }
 
-            // Validate
+            ///// Defaults and validation
+            
+            // Smd file
             if (SourceSmdFilePath == null)
                 throw new Exception(ExceptionMessageNoSmd);
             if (!File.Exists(SourceSmdFilePath))
                 throw new Exception("File specified by --smd argument does not exist.");
 
+            // Output path
             if (OutputPacAnimDataPath == null)
             {
                 int extSpot = SourceSmdFilePath.LastIndexOf('.');

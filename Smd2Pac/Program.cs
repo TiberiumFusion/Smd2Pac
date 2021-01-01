@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,6 +13,9 @@ namespace TiberiumFusion.Smd2Pac
     {
         static void Main(string[] args)
         {
+            Version ver = Assembly.GetExecutingAssembly().GetName().Version;
+            Print("\n[-----     Smd2Pac " + ver.ToString() + "     -----]");
+
             ///// Input reading
             LaunchArgs launchArgs = null;
             try
@@ -24,8 +28,9 @@ namespace TiberiumFusion.Smd2Pac
                 Print(e.Message, 1, "- ");
                 return;
             }
-            
+
             ///// SMD parsing
+            Print("Reading SMD file \"" + launchArgs.SourceSmdFilePath + "\"...");
             SmdData smdData = null;
             try
             {
@@ -42,11 +47,12 @@ namespace TiberiumFusion.Smd2Pac
                 Print(e.Message, 1, "- ");
             }
 
-            ///// Translation to PAC3 animation 
+            ///// Translation to PAC3 animation
+            Print("Creating PAC3 animation data...");
             PacCustomAnimation pacCustomAnim = null;
             try
             {
-                pacCustomAnim = PacCustomAnimation.FromSmdData(smdData);
+                pacCustomAnim = Translator.Smd2Pac(smdData, launchArgs.IgnoreBones, launchArgs.PacAnimDataOptimizeLevel, launchArgs.BoneFixups);
             }
             catch (Exception e)
             {
@@ -55,6 +61,7 @@ namespace TiberiumFusion.Smd2Pac
             }
 
             ///// Write output
+            Print("Writing json interchange data to \"" + launchArgs.OutputPacAnimDataPath + "\"...");
             try
             {
                 var serializerSettings = new JsonSerializerSettings();
@@ -64,17 +71,19 @@ namespace TiberiumFusion.Smd2Pac
                 serializerSettings.Converters.Add(new NoScientificNotationBS());
                 string pacAnimInterchange = JsonConvert.SerializeObject(pacCustomAnim, serializerSettings);
                 File.WriteAllText(launchArgs.OutputPacAnimDataPath, pacAnimInterchange);
+
+                Print("Done");
             }
             catch (Exception e)
             {
                 Print("[!!!] Error writing PAC3 custom animation data to file [!!!]");
                 Print(e.Message, 1, "- ");
             }
-
-            Console.ReadKey();
+            
+            return;
         }
 
-        private static void Print(string message, int indentLevel = 0, string bullet = null)
+        internal static void Print(string message, int indentLevel = 0, string bullet = null)
         {
             foreach (string line in message.Replace("\r\n", "\n").Split('\n'))
                 Console.WriteLine(string.Concat(Enumerable.Repeat("    ", indentLevel)) + (bullet ?? "") + line);
