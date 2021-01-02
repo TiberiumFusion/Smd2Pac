@@ -13,7 +13,9 @@ namespace TiberiumFusion.Smd2Pac
         public string OutputPacAnimDataPath { get; private set; } = null;
         public int PacAnimDataOptimizeLevel { get; private set; } = 1;
         public List<string> IgnoreBones { get; private set; } = new List<string>();
-        public Dictionary<string, Vector3> BoneFixups { get; private set; } = new Dictionary<string, Vector3>();
+        public Dictionary<string, Tuple<Vector3, Vector3>> BoneFixups { get; private set; } = new Dictionary<string, Tuple<Vector3, Vector3>>();
+        public string SubtractionBaseSmd { get; private set; } = null;
+        public int SubtractionBaseFrame { get; private set; } = 0;
 
         private class ArgDef
         {
@@ -29,9 +31,11 @@ namespace TiberiumFusion.Smd2Pac
         {
             ["smd"] = new ArgDef(1, "--smd \"path\\to\\my file.smd\""),
             ["output"] = new ArgDef(1, "--output \"path\\to\\my new pac3 anim data.txt\""),
-            ["ignore-bones"] = new ArgDef(-1, "--ignore-bones ValveBiped.Bip01_L_Thigh ValveBiped.Bip01_L_Calf"),
             ["optimize"] = new ArgDef(1, "--optimize 1"),
-            ["bone-fixup"] = new ArgDef(4, "--bone-fixup ValveBiped.Bip01_Pelvis 0 0 90"),
+            ["ignore-bones"] = new ArgDef(-1, "--ignore-bones ValveBiped.Bip01_L_Thigh ValveBiped.Bip01_L_Calf"),
+            ["bone-fixup"] = new ArgDef(7, "--bone-fixup ValveBiped.Bip01_Pelvis 0 0 0 0 0 90"),
+            ["make-additive-from"] = new ArgDef(1, "--make-additive-from \"path\\to\\reference pose.smd\""),
+            ["additive-base-frame"] = new ArgDef(1, "--additive-base-frame 0"),
         };
 
         private static string StringIsArgKeyword(string s)
@@ -84,9 +88,9 @@ namespace TiberiumFusion.Smd2Pac
                                 else
                                 {
                                     if (argMultiValues.Count < argDef.RequiresValue)
-                                        throw new Exception("Not enough values for argument --" + argKeyword + ". Example usage: " + argDef.Example);
+                                        throw new Exception("Not enough values for argument --" + argKeyword + ".\n  Example usage: " + argDef.Example);
                                     else if (argMultiValues.Count > argDef.RequiresValue)
-                                        throw new Exception("Too many values for argument --" + argKeyword + ". Example usage: " + argDef.Example);
+                                        throw new Exception("Too many values for argument --" + argKeyword + ".\n  Example usage: " + argDef.Example);
                                 }
                             }
                             
@@ -95,9 +99,12 @@ namespace TiberiumFusion.Smd2Pac
                                 break;
 
                             if (!anyCount && t == parseArgs.Count - 1 && argMultiValues.Count < argDef.RequiresValue)
-                                throw new Exception("Insufficient number of values for argument --" + argKeyword + ". Example usage: " + argDef.Example);
+                                throw new Exception("Insufficient number of values for argument --" + argKeyword + ".\n  Example usage: " + argDef.Example);
                         }
                         i = t;
+                        
+                        if (argMultiValues.Count < argDef.RequiresValue)
+                            throw new Exception("Not enough values for argument --" + argKeyword + ".\n  Example usage: " + argDef.Example);
                     }   
                 }
                 else
@@ -118,7 +125,7 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     int optimizeLevel = 0;
                     if (!int.TryParse(argMultiValues[0], out optimizeLevel))
-                        throw new Exception("Invalid value for argument --" + argKeyword + " (not an integer). Example usage: " + ValidArgs[argKeyword].Example);
+                        throw new Exception("Invalid value for argument --" + argKeyword + " (not an integer).\n  Example usage: " + ValidArgs[argKeyword].Example);
                     PacAnimDataOptimizeLevel = optimizeLevel;
                 }
                 else if (argKeyword == "ignore-bones")
@@ -128,20 +135,44 @@ namespace TiberiumFusion.Smd2Pac
                 }
                 else if (argKeyword == "bone-fixup")
                 {
+                    float posX = 0f;
+                    float posY = 0f;
+                    float posZ = 0f;
                     float rotX = 0f;
                     float rotY = 0f;
                     float rotZ = 0f;
-                    if (!float.TryParse(argMultiValues[1], out rotX))
-                        throw new Exception("Invalid X rotation for argument --" + argKeyword + " (not a number). Example usage: " + ValidArgs[argKeyword].Example);
-                    if (!float.TryParse(argMultiValues[2], out rotY))
-                        throw new Exception("Invalid X rotation for argument --" + argKeyword + " (not a number). Example usage: " + ValidArgs[argKeyword].Example);
-                    if (!float.TryParse(argMultiValues[3], out rotZ))
-                        throw new Exception("Invalid X rotation for argument --" + argKeyword + " (not a number). Example usage: " + ValidArgs[argKeyword].Example);
-                    BoneFixups[argMultiValues[0]] = new Vector3(rotX, rotY, rotZ);
+                    if (!float.TryParse(argMultiValues[1], out posX))
+                        throw new Exception("Invalid X translation for argument --" + argKeyword + " (not a number).\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    if (!float.TryParse(argMultiValues[2], out posY))
+                        throw new Exception("Invalid Y translation for argument --" + argKeyword + " (not a number).\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    if (!float.TryParse(argMultiValues[3], out posZ))
+                        throw new Exception("Invalid Z translation for argument --" + argKeyword + " (not a number).\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    if (!float.TryParse(argMultiValues[4], out rotX))
+                        throw new Exception("Invalid X rotation for argument --" + argKeyword + " (not a number).\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    if (!float.TryParse(argMultiValues[5], out rotY))
+                        throw new Exception("Invalid Y rotation for argument --" + argKeyword + " (not a number).\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    if (!float.TryParse(argMultiValues[6], out rotZ))
+                        throw new Exception("Invalid Z rotation for argument --" + argKeyword + " (not a number).\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    BoneFixups[argMultiValues[0]] = new Tuple<Vector3, Vector3>(new Vector3(posX, posY, posZ), new Vector3(rotX, rotY, rotZ));
+                }
+                else if (argKeyword == "make-additive-from")
+                {
+                    if (!File.Exists(argMultiValues[0]))
+                        throw new Exception("File specified by argument --" + argKeyword + " does not exist.\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    SubtractionBaseSmd = argMultiValues[0];
+                }
+                else if (argKeyword == "additive-base-frame")
+                {
+                    int frame = 0;
+                    if (!int.TryParse(argMultiValues[0], out frame))
+                        throw new Exception("Invalid value for argument --" + argKeyword + " (not an integer).\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    if (frame < 0)
+                        throw new Exception("Invalid value for argument --" + argKeyword + ", value cannot be less than 0.\n  Example usage: " + ValidArgs[argKeyword].Example);
+                    SubtractionBaseFrame = frame;
                 }
             }
 
-            ///// Defaults and validation
+            ///// Defaults and final validation
             
             // Smd file
             if (SourceSmdFilePath == null)
@@ -153,7 +184,7 @@ namespace TiberiumFusion.Smd2Pac
             if (OutputPacAnimDataPath == null)
             {
                 int extSpot = SourceSmdFilePath.LastIndexOf('.');
-                OutputPacAnimDataPath = SourceSmdFilePath.Substring(0, extSpot) + "_pac3data.txt"; // Default output filename
+                OutputPacAnimDataPath = SourceSmdFilePath.Substring(0, extSpot) + "_pac3animdata.txt"; // Default output filename
             }
         }
     }

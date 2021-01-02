@@ -283,13 +283,54 @@ namespace TiberiumFusion.Smd2Pac
                     bonePose.Position = new Vector3(bonePosX, bonePosY, bonePosZ);
                     bonePose.Rotation = new Vector3(boneRotX, boneRotY, boneRotZ);
 
-                    frame.ExplicitBonePoses.Add(bonePose);
+                    frame.AddBonePose(bonePose);
                 }
 
                 Timeline.AddFrame(frame); // Frames will be stored sequentially as they were defined in the SDM and any pose interpolation will occur on demand if needed
             }
 
             Print("- " + bones.Count + " bones, " + Timeline.ExplicitFrames.Count + " frames of animation", 1);
+        }
+
+        // Writes this SmdData back into ascii lines
+        public string[] ToLines(bool bakeAnimationFrames = false)
+        {
+            List<string> lines = new List<string>();
+
+            // Header
+            lines.Add("// Output from Smd2Pac");
+            lines.Add("version 1");
+
+            // Nodes
+            lines.Add("nodes");
+            foreach (SmdBone bone in Skeleton.Bones)
+                lines.Add("    " + bone.ID + " \"" + bone.Name + "\" " + bone.ParentID);
+            lines.Add("end");
+
+            // Animation
+            lines.Add("skeleton");
+            for (int i = 0; i < Timeline.ExplicitFrames.Count; i++)
+            {
+                SmdTimelineFrame frame = Timeline.ExplicitFrames[i];
+                if (bakeAnimationFrames)
+                    frame = frame.GetBakedFrame();
+
+                lines.Add("    time " + frame.FrameTime);
+                
+                foreach (SmdBonePose bonePose in frame.ExplicitBonePoses)
+                {
+                    lines.Add("        " + bonePose.Bone.ID
+                              + " " + bonePose.Position.X.ToString("F6")
+                              + " " + bonePose.Position.Y.ToString("F6")
+                              + " " + bonePose.Position.Z.ToString("F6")
+                              + " " + bonePose.Rotation.X.ToString("F6")
+                              + " " + bonePose.Rotation.Y.ToString("F6")
+                              + " " + bonePose.Rotation.Z.ToString("F6"));
+                }
+            }
+            lines.Add("end");
+
+            return lines.ToArray();
         }
 
         private static void Print(string message, int indentLevel = 0, string bullet = null)

@@ -1,18 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TiberiumFusion.Smd2Pac.ValveMath;
 
 namespace TiberiumFusion.Smd2Pac
 {
     public static class Translator
     {
-        public static PacCustomAnimation Smd2Pac(SmdData smdData, List<string> ignoreBones, int optimizeLevel, Dictionary<string, Vector3> boneFixups)
+        public static PacCustomAnimation Smd2Pac(SmdData smdData,
+                                                  List<string> ignoreBones,
+                                                  int optimizeLevel,
+                                                  Dictionary<string, Tuple<Vector3, Vector3>> boneFixups,
+                                                  SmdData subtractionBaseSmd,
+                                                  int subtractionBaseFrame)
         {
             PacCustomAnimation pacAnim = new PacCustomAnimation();
 
-            // Optimization
+
+            ///// Optimization
             // We can completely omit bones that do not ever animate (more than a given threshold)
             List<string> identityBones = new List<string>();
             if (optimizeLevel >= 1)
@@ -46,8 +54,27 @@ namespace TiberiumFusion.Smd2Pac
                 }
             }
 
-            // Overall animation playback rate
-            pacAnim.TimeScale = smdData.Timeline.ExpectedFrameRate;
+
+            ///// Find frame for base pose subtraction
+            SmdTimelineFrame subtractionBasePoseFrame = null;
+            if (subtractionBaseSmd != null)
+            {
+                // Validate the user's chosen frame number
+                foreach (SmdTimelineFrame frame in subtractionBaseSmd.Timeline.ExplicitFrames)
+                {
+                    if (frame.FrameTime == subtractionBaseFrame)
+                    {
+                        subtractionBasePoseFrame = frame;
+                        break;
+                    }
+                }
+                if (subtractionBasePoseFrame == null)
+                    throw new Exception("No frame with \"time " + subtractionBaseFrame + "\" exists within the subtraction base SMD.");
+            }
+            
+
+            ///// Main animation data
+            pacAnim.TimeScale = smdData.Timeline.ExpectedFrameRate; // Overall animation playback rate
 
             // The first smd frame with have an extremely high pac3 "FrameRate" due to the wacky animation rules of pac3
             // All subsequent frames with have a "FrameRate" derived from the time gap between them and the previous frame
@@ -55,7 +82,82 @@ namespace TiberiumFusion.Smd2Pac
             float lastSmdFrameTime = 0;
             for (int i = 0; i < smdData.Timeline.ExplicitFrames.Count; i++)
             {
-                SmdTimelineFrame smdFrame = smdData.Timeline.ExplicitFrames[i];
+                // Finalize the SMD frame data before translating it to the pac3 anim format
+                SmdTimelineFrame smdFrame = smdData.Timeline.ExplicitFrames[i].GetBakedFrame();
+                if (subtractionBasePoseFrame != null)
+                {
+                    /* Pose subtraction
+                     * 
+                     *   SMD animations are all relative in parent bone space, but they are relative to 0,0,0 in both translation and rotation.
+                     *   This means that every SMD animation is implicitly responsibly for maintaining the shape of the model's skeleton.
+                     *   In other words, SMD animation is NOT relative to the model's bind pose, but rather includes the bind pose + the actual animation composited together.
+                     *   
+                     *   This becomes a problem in-engine, since PAC3 custom animations are relative to either the model's bind pose or the currently playing sequence.
+                     *   In other words, this means all PAC3 custom anims are additive animations. So if we feed PAC3 a normal SMD animation, things will look very ugly.
+                     *   The solution is to "subtract" the desired animation from the model's bind pose, thus turning it into an additive animation that plays nice with PAC3.
+                     *   
+                     *   Studiomdl can also do this, via the `subtract` part of the $animation command. The compiled MDL can then be decompiled with Crowbar to get the subtracted SMD.
+                     *   In my testing, I have found this always adds a -90 Y rotation to the root bone. I'm not sure why that happens, and whether it's a studiomdl or Crowbar bug.
+                     *   Valve has kept the core level of the Source engine's math code very secret, including studiomdl, unfortunately.
+                     *   I did find a copy of the 2004 Episode 1 SDK, though, which includes all the relevant code for subtracting animations. It seems to be overengineered...
+                     */
+
+                    // Copy the frame and subtract the base pose frame from it for all bones
+                    SmdTimelineFrame subtractedSmdFrame = smdFrame;//.Clone();
+                    foreach (SmdBonePose subtractedBonePose in subtractedSmdFrame.ExplicitBonePoses)
+                    {
+                        SmdBonePose subtractionBaseBonePose = null;
+                        if (subtractionBasePoseFrame.ExplicitBonePoseByBoneName.TryGetValue(subtractedBonePose.Bone.Name, out subtractionBaseBonePose))
+                        {
+                            // Translation subtraction
+                            // This is as straightforward as it can possibly be
+                            subtractedBonePose.Position -= subtractionBaseBonePose.Position;
+
+                            // Rotation subtraction
+                            // This is more interesting. Basic idea: r = q * p^-1
+
+                            /* Generic subtraction method
+                             * Produces results that are correct but misaligned into some unknown coordinate space that isn't what Source uses
+                             * Notably, roll is negated and both pitch & yaw are halfway between correct and wrong
+                            Quaternion targetRot = Quaternion.FromYawPitchRoll(subtractedBonePose.Rotation.Y, subtractedBonePose.Rotation.X, subtractedBonePose.Rotation.Z);
+                            Quaternion baseRot = Quaternion.FromYawPitchRoll(subtractionBaseBonePose.Rotation.Y, subtractionBaseBonePose.Rotation.X, subtractionBaseBonePose.Rotation.Z);
+                            Quaternion difference = targetRot.Inverse() * baseRot; // Undo the base pose rot, then apply the other pose rot
+                            float yaw = 0f;
+                            float pitch = 0f;
+                            float roll = 0f;
+                            difference.ToYawPitchRoll(out yaw, out pitch, out roll); // Radians
+                            subtractedBonePose.Rotation.X = pitch;
+                            subtractedBonePose.Rotation.Y = yaw;
+                            subtractedBonePose.Rotation.Z = roll;
+                            */
+
+                            ///// Source engine specific subtraction method
+                            // Turn the SMD's yaw pitch roll into a quat with the usual calculations
+                            Quaternion targetRot = Quaternion.FromYawPitchRoll(subtractedBonePose.Rotation.Y, subtractedBonePose.Rotation.X, subtractedBonePose.Rotation.Z);
+                            Quaternion baseRot = Quaternion.FromYawPitchRoll(subtractionBaseBonePose.Rotation.Y, subtractionBaseBonePose.Rotation.X, subtractionBaseBonePose.Rotation.Z);
+                            // But from here on we do everything the way Source does it
+                            VQuaternion vTargetRot = new VQuaternion(targetRot.X, targetRot.Y, targetRot.Z, targetRot.W);
+                            VQuaternion vBaseRot = new VQuaternion(baseRot.X, baseRot.Y, baseRot.Z, baseRot.W);
+                            Vector3 differenceEngineAngles = VQuaternion.SMAngles(-1, vBaseRot, vTargetRot); // Radians
+                            subtractedBonePose.Rotation.X = differenceEngineAngles.X * 1;
+                            subtractedBonePose.Rotation.Y = differenceEngineAngles.Y * 1;
+                            subtractedBonePose.Rotation.Z = differenceEngineAngles.Z * 1;
+
+                            // In Source:
+                            // - Pitch is rot X
+                            // - Yaw is rot Y
+                            // - Roll is rot Z
+                        }
+                        else
+                        {
+                            Print("- [WARNING] Frame " + smdFrame.FrameTime + " subtraction: Bone " + subtractedBonePose.Bone.Name + " is not present in the subtraction base pose frame.", 1);
+                            // Pose subtraction should really only be be done on sequences that have identical skeletons with every bone posed
+                        }
+                    }
+
+                    // Continue on with the subtracted frame
+                    smdFrame = subtractedSmdFrame;
+                }
 
                 // Frame duration
                 PacFrame pacFrame = new PacFrame();
@@ -75,7 +177,7 @@ namespace TiberiumFusion.Smd2Pac
                 }
 
                 // Frame bone poses
-                foreach (SmdBonePose smdBonePose in smdFrame.GetBakedFrame().ExplicitBonePoses)
+                foreach (SmdBonePose smdBonePose in smdFrame.ExplicitBonePoses)
                 {
                     if (ignoreBones.Contains(smdBonePose.Bone.Name))
                         continue;
@@ -102,20 +204,24 @@ namespace TiberiumFusion.Smd2Pac
                     pacBonePose.MU = smdBonePose.Position.Z * 1;
 
                     // Rotation
-                    float radToDeg(float rad) { return rad * 180f / 3.14159265359f; }
-                    pacBonePose.RF = radToDeg(smdBonePose.Rotation.X) * 1;
-                    pacBonePose.RR = radToDeg(smdBonePose.Rotation.Y) * 1;
-                    pacBonePose.RU = radToDeg(smdBonePose.Rotation.Z) * 1;
+                    pacBonePose.RF = MathHelper.ToDegrees(smdBonePose.Rotation.X) * 1;
+                    pacBonePose.RR = MathHelper.ToDegrees(smdBonePose.Rotation.Y) * 1;
+                    pacBonePose.RU = MathHelper.ToDegrees(smdBonePose.Rotation.Z) * 1;
 
-                    // Fixup rotations
-                    // These are optional constant rotations that are added to the bone every frame.
+                    // Fixup translation + rotation
+                    // These are optional constant transforms that are added to the bone pose every frame.
                     // Useful for fixing skeleton alignment, especially if the root bone is incorrectly angled 90 degrees in a random direction. (studiomdl sometimes does this when `subtract`ing $animations and $sequences)
-                    Vector3 boneFixupRotation;
-                    if (boneFixups.TryGetValue(smdBonePose.Bone.Name, out boneFixupRotation))
+                    Tuple<Vector3, Vector3> boneFixup;
+                    if (boneFixups.TryGetValue(smdBonePose.Bone.Name, out boneFixup))
                     {
-                        pacBonePose.RF += boneFixupRotation.X;
-                        pacBonePose.RR += boneFixupRotation.Y;
-                        pacBonePose.RU += boneFixupRotation.Z;
+                        // The fixup translations inputted by the user should be in SMD coordinate space
+                        pacBonePose.MF += boneFixup.Item1.Y * -1;
+                        pacBonePose.MR += boneFixup.Item1.X * 1;
+                        pacBonePose.MU += boneFixup.Item1.Z * 1;
+
+                        pacBonePose.RF += boneFixup.Item2.X * 1;
+                        pacBonePose.RR += boneFixup.Item2.Y * 1;
+                        pacBonePose.RU += boneFixup.Item2.Z * 1;
                     }
 
                     pacFrame.BoneInfo[smdBonePose.Bone.Name] = pacBonePose;
@@ -124,6 +230,8 @@ namespace TiberiumFusion.Smd2Pac
                 pacAnim.FrameData.Add(pacFrame);
                 lastSmdFrameTime = smdFrame.FrameTime;
             }
+
+            File.WriteAllLines("check.smd", smdData.ToLines(), Encoding.ASCII);
 
             return pacAnim;
         }

@@ -10,14 +10,22 @@ namespace TiberiumFusion.Smd2Pac
     {
         public int FrameIndex = -1;
         public float FrameTime = -1;
-        public List<SmdBonePose> ExplicitBonePoses = new List<SmdBonePose>(); // Only bone poses which are explicitly defined in the SMD file for this frame
+        public List<SmdBonePose> ExplicitBonePoses { get; private set; } = new List<SmdBonePose>(); // Only bone poses which are explicitly defined in the SMD file for this frame
+        public Dictionary<string, SmdBonePose> ExplicitBonePoseByBoneName { get; private set; } = new Dictionary<string, SmdBonePose>();
+
         public SmdTimeline Timeline = null;
 
         public SmdTimelineFrame()
         {
 
         }
-        
+
+        public void AddBonePose(SmdBonePose bonePose)
+        {
+            ExplicitBonePoses.Add(bonePose);
+            ExplicitBonePoseByBoneName[bonePose.Bone.Name] = bonePose;
+        }
+
         // SMD allows frames to omit explicit bone poses for bones that havent actually moved since the last frame.
         // This method returns a "baked" timeline frame of itself that includes effective pose data for ALL bones
         public SmdTimelineFrame GetBakedFrame()

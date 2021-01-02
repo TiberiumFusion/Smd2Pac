@@ -30,7 +30,7 @@ namespace TiberiumFusion.Smd2Pac
             }
 
             ///// SMD parsing
-            Print("Reading SMD file \"" + launchArgs.SourceSmdFilePath + "\"");
+            Print("Reading SMD file: \"" + launchArgs.SourceSmdFilePath + "\"");
             SmdData smdData = null;
             try
             {
@@ -47,12 +47,38 @@ namespace TiberiumFusion.Smd2Pac
                 Print(e.Message, 1, "- ");
             }
 
+            ///// Base SMD pose parsing
+            SmdData basePoseSmdData = null;
+            if (launchArgs.SubtractionBaseSmd != null)
+            {
+                Print("Reading subtraction base pose SMD file: \"" + launchArgs.SubtractionBaseSmd + "\"");
+                try
+                {
+                    basePoseSmdData = SmdData.FromFile(launchArgs.SubtractionBaseSmd);
+                }
+                catch (Exception e) when (e is IOException || e is FileNotFoundException || e is DirectoryNotFoundException || e is PathTooLongException || e is ArgumentException)
+                {
+                    Print("[!!!] Error reading SMD file [!!!]");
+                    Print(e.Message, 1, "- ");
+                }
+                catch (Exception e)
+                {
+                    Print("[!!!] Error parsing SMD file [!!!]");
+                    Print(e.Message, 1, "- ");
+                }
+            }
+
             ///// Translation to PAC3 animation
             Print("Creating PAC3 animation data");
             PacCustomAnimation pacCustomAnim = null;
             try
             {
-                pacCustomAnim = Translator.Smd2Pac(smdData, launchArgs.IgnoreBones, launchArgs.PacAnimDataOptimizeLevel, launchArgs.BoneFixups);
+                pacCustomAnim = Translator.Smd2Pac(smdData,
+                                                   launchArgs.IgnoreBones,
+                                                   launchArgs.PacAnimDataOptimizeLevel,
+                                                   launchArgs.BoneFixups,
+                                                   basePoseSmdData,
+                                                   launchArgs.SubtractionBaseFrame);
             }
             catch (Exception e)
             {
@@ -79,6 +105,8 @@ namespace TiberiumFusion.Smd2Pac
                 Print("[!!!] Error writing PAC3 custom animation data to file [!!!]");
                 Print(e.Message, 1, "- ");
             }
+
+            Console.ReadKey();
             
             return;
         }
