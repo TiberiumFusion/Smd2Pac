@@ -10,15 +10,18 @@ namespace TiberiumFusion.Smd2Pac
 {
     public static class Translator
     {
-        public static PacCustomAnimation Smd2Pac(SmdData smdData,
+        public static PacCustomAnimation Smd2Pac(SmdData untouchedSmdData,
                                                   List<string> ignoreBones,
                                                   int optimizeLevel,
                                                   Dictionary<string, Tuple<Vector3, Vector3>> boneFixups,
                                                   SmdData subtractionBaseSmd,
-                                                  int subtractionBaseFrame)
+                                                  int subtractionBaseFrame,
+                                                  out SmdData subtractedSmdData)
         {
             PacCustomAnimation pacAnim = new PacCustomAnimation();
 
+            // Work on a copy of the SmdData so we can do pose subtraction nondestructively
+            SmdData smdData = untouchedSmdData.Clone();
 
             ///// Optimization
             // We can completely omit bones that do not ever animate (more than a given threshold)
@@ -83,7 +86,9 @@ namespace TiberiumFusion.Smd2Pac
             for (int i = 0; i < smdData.Timeline.ExplicitFrames.Count; i++)
             {
                 // Finalize the SMD frame data before translating it to the pac3 anim format
-                SmdTimelineFrame smdFrame = smdData.Timeline.ExplicitFrames[i].GetBakedFrame();
+                SmdTimelineFrame smdFrame = smdData.Timeline.ExplicitFrames[i];
+                smdFrame.BakeFrame();
+                
                 if (subtractionBasePoseFrame != null)
                 {
                     /* Pose subtraction
@@ -99,12 +104,11 @@ namespace TiberiumFusion.Smd2Pac
                      *   Studiomdl can also do this, via the `subtract` part of the $animation command. The compiled MDL can then be decompiled with Crowbar to get the subtracted SMD.
                      *   In my testing, I have found this always adds a -90 Y rotation to the root bone. I'm not sure why that happens, and whether it's a studiomdl or Crowbar bug.
                      *   Valve has kept the core level of the Source engine's math code very secret, including studiomdl, unfortunately.
-                     *   I did find a copy of the 2004 Episode 1 SDK, though, which includes all the relevant code for subtracting animations. It seems to be overengineered...
+                     *   I did find a copy of the 2004 Episode 1 and 2007 SDK, though, which includes all the relevant code for subtracting animations - most crucially, it revealed Valve's inconsistencies in coordinate order that I was missing beforehand.
                      */
 
                     // Copy the frame and subtract the base pose frame from it for all bones
-                    SmdTimelineFrame subtractedSmdFrame = smdFrame;//.Clone();
-                    foreach (SmdBonePose subtractedBonePose in subtractedSmdFrame.ExplicitBonePoses)
+                    foreach (SmdBonePose subtractedBonePose in smdFrame.ExplicitBonePoses)
                     {
                         SmdBonePose subtractionBaseBonePose = null;
                         if (subtractionBasePoseFrame.ExplicitBonePoseByBoneName.TryGetValue(subtractedBonePose.Bone.Name, out subtractionBaseBonePose))
@@ -116,12 +120,13 @@ namespace TiberiumFusion.Smd2Pac
                             // Rotation subtraction
                             // This is much more interesting. Basic idea: r = q * p^-1
                             
+                            // The process here is identical to how studiomdl does it, but without the singularity/rounding/precision error that causes strange offsets
                             // Turn the SMD's yaw pitch roll into a quat (these are QAngles, NOT RadianAngles!)
                             Vector3 baseYPR = new Vector3(subtractionBaseBonePose.Rotation.Y, subtractionBaseBonePose.Rotation.Z, subtractionBaseBonePose.Rotation.X);
                             Vector3 destYPR = new Vector3(subtractedBonePose.Rotation.Y, subtractedBonePose.Rotation.Z, subtractedBonePose.Rotation.X);
                             VQuaternion baseRot = VQuaternion.FromQAngles(baseYPR);
                             VQuaternion destRot = VQuaternion.FromQAngles(destYPR);
-                            Vector3 differenceRangles = VQuaternion.SMAngles(-1, baseRot, destRot); // RadianAngles(?)
+                            Vector3 differenceRangles = VQuaternion.SMAngles(-1, baseRot, destRot); // RadianAngles?
                                 // X is pitch, Y is yaw, Z is roll
                             subtractedBonePose.Rotation.X = differenceRangles.Z * 1;
                             subtractedBonePose.Rotation.Y = differenceRangles.X * 1;
@@ -132,7 +137,7 @@ namespace TiberiumFusion.Smd2Pac
                             // - Yaw is rot Y
                             // - Roll is rot Z
                             // But not always! Because it's Valve!
-                            // Which is why we have to swizzle differenceRangles back into a QAngle, because SMAngles produces a RadianAngles!
+                            // Which is why we have to swizzle differenceRangles back into a QAngle, because SMAngles doesn't produce a proper QAngle!
                         }
                         else
                         {
@@ -140,9 +145,6 @@ namespace TiberiumFusion.Smd2Pac
                             // Pose subtraction should really only be be done on sequences that have identical skeletons with every bone posed
                         }
                     }
-
-                    // Continue on with the subtracted frame
-                    smdFrame = subtractedSmdFrame;
                 }
 
                 // Frame duration
@@ -196,7 +198,7 @@ namespace TiberiumFusion.Smd2Pac
 
                     // Fixup translation + rotation
                     // These are optional constant transforms that are added to the bone pose every frame.
-                    // Useful for fixing skeleton alignment, especially if the root bone is incorrectly angled 90 degrees in a random direction. (studiomdl sometimes does this when `subtract`ing $animations and $sequences)
+                    // Useful for fixing skeleton alignment, especially for `subtracted` SMDs created by studiomdl + Crowbar, which typically add an erraneous -90 Y rotation to the root bone.
                     Tuple<Vector3, Vector3> boneFixup;
                     if (boneFixups.TryGetValue(smdBonePose.Bone.Name, out boneFixup))
                     {
@@ -216,8 +218,12 @@ namespace TiberiumFusion.Smd2Pac
                 pacAnim.FrameData.Add(pacFrame);
                 lastSmdFrameTime = smdFrame.FrameTime;
             }
-
-            File.WriteAllLines("check.smd", smdData.ToLines(), Encoding.ASCII);
+            
+            // Return subtracted SMD data for dumping
+            if (subtractionBaseSmd != null)
+                subtractedSmdData = smdData;
+            else
+                subtractedSmdData = null;
 
             return pacAnim;
         }

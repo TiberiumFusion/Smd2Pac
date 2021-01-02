@@ -13,6 +13,11 @@ namespace TiberiumFusion.Smd2Pac
         public float ExpectedFrameRate = 30.0f; // In frame per second. This would be the value you'd use with the `fps` option in your $sequence commands
                                                 // Gmod (or source in general) default to 30 fps sequences unless otherwise specified, but the user will have to choose the correct framerate using their qc file
 
+        public SmdTimeline()
+        {
+
+        }
+
         public SmdTimeline(SmdSkeleton targetSkeleton)
         {
             TargetSkeleton = targetSkeleton;
@@ -23,6 +28,22 @@ namespace TiberiumFusion.Smd2Pac
             ExplicitFrames.Add(frame);
             frame.Timeline = this;
             frame.FrameIndex = ExplicitFrames.Count - 1;
+        }
+
+        public SmdTimeline Clone(SmdSkeleton targetSkeleton)
+        {
+            SmdTimeline clone = new SmdTimeline();
+
+            clone.TargetSkeleton = targetSkeleton;
+            clone.ExpectedFrameRate = ExpectedFrameRate;
+            foreach (SmdTimelineFrame frame in ExplicitFrames)
+            {
+                SmdTimelineFrame clonedFrame = frame.Clone();
+                clonedFrame.Timeline = clone;
+                clone.ExplicitFrames.Add(clonedFrame);
+            }
+
+            return clone;
         }
 
         public override string ToString()

@@ -11,11 +11,13 @@ namespace TiberiumFusion.Smd2Pac
     {
         public string SourceSmdFilePath { get; private set; } = null;
         public string OutputPacAnimDataPath { get; private set; } = null;
+        public bool EscapeOutputPacAnimData { get; private set; } = true;
         public int PacAnimDataOptimizeLevel { get; private set; } = 1;
         public List<string> IgnoreBones { get; private set; } = new List<string>();
         public Dictionary<string, Tuple<Vector3, Vector3>> BoneFixups { get; private set; } = new Dictionary<string, Tuple<Vector3, Vector3>>();
         public string SubtractionBaseSmd { get; private set; } = null;
         public int SubtractionBaseFrame { get; private set; } = 0;
+        public bool DumpSubtractedSmd { get; private set; } = false;
 
         private class ArgDef
         {
@@ -31,11 +33,13 @@ namespace TiberiumFusion.Smd2Pac
         {
             ["smd"] = new ArgDef(1, "--smd \"path\\to\\my file.smd\""),
             ["output"] = new ArgDef(1, "--output \"path\\to\\my new pac3 anim data.txt\""),
+            ["dont-escape-output"] = new ArgDef(0, "--dont-escape-output"),
             ["optimize"] = new ArgDef(1, "--optimize 1"),
             ["ignore-bones"] = new ArgDef(-1, "--ignore-bones ValveBiped.Bip01_L_Thigh ValveBiped.Bip01_L_Calf"),
             ["bone-fixup"] = new ArgDef(7, "--bone-fixup ValveBiped.Bip01_Pelvis 0 0 0 0 0 90"),
             ["make-additive-from"] = new ArgDef(1, "--make-additive-from \"path\\to\\reference pose.smd\""),
             ["additive-base-frame"] = new ArgDef(1, "--additive-base-frame 0"),
+            ["dump-additive-smd"] = new ArgDef(0, "--dump-additive-smd"),
         };
 
         private static string StringIsArgKeyword(string s)
@@ -121,6 +125,10 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     OutputPacAnimDataPath = argMultiValues[0];
                 }
+                else if (argKeyword == "dont-escape-output")
+                {
+                    EscapeOutputPacAnimData = false;
+                }
                 else if (argKeyword == "optimize")
                 {
                     int optimizeLevel = 0;
@@ -169,6 +177,10 @@ namespace TiberiumFusion.Smd2Pac
                     if (frame < 0)
                         throw new Exception("Invalid value for argument --" + argKeyword + ", value cannot be less than 0.\n  Example usage: " + ValidArgs[argKeyword].Example);
                     SubtractionBaseFrame = frame;
+                }
+                else if (argKeyword == "dump-additive-smd")
+                {
+                    DumpSubtractedSmd = true;
                 }
             }
 

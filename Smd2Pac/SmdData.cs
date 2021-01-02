@@ -13,6 +13,8 @@ namespace TiberiumFusion.Smd2Pac
         public SmdSkeleton Skeleton { get; private set; }
         public SmdTimeline Timeline { get; private set; }
 
+        public string SourceFilename { get; private set; }
+
         private string ErrInvalid(string message)
         {
             return "Invalid SMD data. " + message;
@@ -33,11 +35,18 @@ namespace TiberiumFusion.Smd2Pac
         // Creates SmdData from an SMD file
         public static SmdData FromFile(string filepath)
         {
-            return new SmdData(File.ReadAllLines(filepath));
+            return new SmdData(Path.GetFileName(filepath), File.ReadAllLines(filepath));
         }
 
-        public SmdData(string[] rawLines)
+        public SmdData()
         {
+
+        }
+
+        public SmdData(string sourceFilename, string[] rawLines)
+        {
+            SourceFilename = sourceFilename;
+
             // Associate line numbers with source data
             List<NumberedLine> lines = new List<NumberedLine>();
             for (int i = 0; i < rawLines.Length; i++)
@@ -331,6 +340,23 @@ namespace TiberiumFusion.Smd2Pac
             lines.Add("end");
 
             return lines.ToArray();
+        }
+
+        public SmdData Clone()
+        {
+            SmdData clone = new SmdData();
+
+            clone.SourceFilename = this.SourceFilename;
+            clone.Version = this.Version;
+            clone.Skeleton = this.Skeleton.Clone();
+            clone.Timeline = this.Timeline.Clone(clone.Skeleton);
+
+            // Relink bone references
+            foreach (SmdTimelineFrame frame in clone.Timeline.ExplicitFrames)
+                foreach (SmdBonePose bonePose in frame.ExplicitBonePoses)
+                    bonePose.Bone = clone.Skeleton.Bones.Where(b => b.ID == bonePose.Bone.ID).FirstOrDefault();
+
+            return clone;
         }
 
         private static void Print(string message, int indentLevel = 0, string bullet = null)

@@ -35,14 +35,19 @@ namespace TiberiumFusion.Smd2Pac
                 return this;
 
             SmdTimelineFrame baked = Clone();
+            baked.BakeFrame();
 
+            return baked;
+        }
+        public void BakeFrame()
+        {
             List<SmdBone> remainingBones = new List<SmdBone>(Timeline.TargetSkeleton.Bones); // Bones which we still have to find pose data for
-            foreach (SmdBonePose explicitBonePose in baked.ExplicitBonePoses)
+            foreach (SmdBonePose explicitBonePose in ExplicitBonePoses)
                 if (remainingBones.Contains(explicitBonePose.Bone))
                     remainingBones.Remove(explicitBonePose.Bone);
-            
+
             if (remainingBones.Count == 0)
-                return this; // We already have pose data for every bone in the skeleton
+                return; // We already have pose data for every bone in the skeleton
 
             // Rewind through the previous frames and grab the bone pose for any remaining bones until we either get them all or run out of timeline to rewind
             int prevFrameIndex = FrameIndex - 1;
@@ -53,15 +58,13 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     if (remainingBones.Contains(prevBonePose.Bone))
                     {
-                        baked.ExplicitBonePoses.Add(prevBonePose.Clone());
+                        ExplicitBonePoses.Add(prevBonePose.Clone());
                         remainingBones.Remove(prevBonePose.Bone);
                     }
                 }
                 prevFrameIndex--;
             }
-            baked.ExplicitBonePoses = baked.ExplicitBonePoses.OrderBy(p => p.Bone.ID).ToList(); // Restore order by bone ID
-
-            return baked;
+            ExplicitBonePoses = ExplicitBonePoses.OrderBy(p => p.Bone.ID).ToList(); // Restore order by bone ID
         }
 
         public SmdTimelineFrame Clone()
@@ -71,7 +74,7 @@ namespace TiberiumFusion.Smd2Pac
             clone.FrameTime = FrameTime;
             clone.Timeline = Timeline;
             foreach (SmdBonePose bonePose in ExplicitBonePoses)
-                clone.ExplicitBonePoses.Add(bonePose.Clone());
+                clone.AddBonePose(bonePose.Clone());
             return clone;
         }
 

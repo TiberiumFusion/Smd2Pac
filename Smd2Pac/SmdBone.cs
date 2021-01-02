@@ -16,12 +16,26 @@ namespace TiberiumFusion.Smd2Pac
 
         public NumberedLine SmdSourceLine = null;
         
+        public SmdBone()
+        {
+
+        }
+
         public SmdBone(int id, string name, int parentID)
         {
             ID = id;
             Name = name;
             Parent = null;
             ParentID = parentID;
+        }
+
+        public SmdBone Clone()
+        {
+            SmdBone clone = new SmdBone();
+            clone.ID = this.ID;
+            clone.Name = this.Name;
+            clone.ParentID = this.ParentID;
+            return clone;
         }
 
         public override string ToString()
