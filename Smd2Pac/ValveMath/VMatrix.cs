@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace TiberiumFusion.Smd2Pac.ValveMath
 {
-    // 3x4 matrix with functions from the 2004 Episode 1 SDK
+    // 3x4 matrix with functions from the 2007 SDK
     public struct VMatrix
     {
         /* Source init reference:
-         * The visual layout valve used (as shown below) suggests this is a row-major matrix
+         * The visual layout valve used in the code (as shown below) suggests this is a row-major matrix
          
              m_flMatVal[0][0] = m00; m_flMatVal[0][1] = m01; m_flMatVal[0][2] = m02; m_flMatVal[0][3] = m03;
              m_flMatVal[1][0] = m10; m_flMatVal[1][1] = m11; m_flMatVal[1][2] = m12; m_flMatVal[1][3] = m13;
@@ -33,11 +33,16 @@ namespace TiberiumFusion.Smd2Pac.ValveMath
             M20 = m20; M21 = m21; M22 = m22; M23 = m23;
         }
 
-        // Originally: void MatrixAngles( const matrix3x4_t& matrix, float* angles )
-        public Vector3 ToEngineAngles()
-        {
-            Vector3 qangles;
 
+        // Originally: void MatrixAngles( const matrix3x4_t& matrix, float* angles )
+        // "Purpose: Generates Euler angles given a left-handed orientation matrix. The
+        //           columns of the matrix contain the forward, left, and up vectors.
+        //  Input  : matrix - Left-handed orientation matrix.
+        //           angles[PITCH, YAW, ROLL]. Receives right-handed counterclockwise
+        //               rotations in degrees around Y, Z, and X respectively."
+        // Studiomdl calls this with a RadianEuler object and not a QAngles object, but the code seems to be intended for QAngles.
+        public Vector3 ToRadianAngles()
+        {
             Vector3 forward;
             Vector3 left;
             Vector3 up;
@@ -54,37 +59,36 @@ namespace TiberiumFusion.Smd2Pac.ValveMath
             left.Z = M21;
             up.Z = M22;
   
-            float xyDist = (float)Math.Sqrt((forward.X * forward.X) + (forward.Y * forward.Y));
-     
+            float xyDist = (float)Math.Sqrt(forward.X * forward.X + forward.Y * forward.Y);
+
+            Vector3 angles;
+
             // enough here to get angles?
             if (xyDist > 0.001f)
             {
                 // (yaw)    y = ATAN( forward.y, forward.x );       -- in our space, forward is the X axis
-                qangles.Y = (float)Math.Atan2(forward.Y, forward.X);
+                angles.Y = (float)Math.Atan2(forward.Y, forward.X);
 
-                // The engine does pitch inverted from this, but we always end up negating it in the DLL
-                // UNDONE: Fix the engine to make it consistent
                 // (pitch)  x = ATAN( -forward.z, sqrt(forward.x*forward.x+forward.y*forward.y) );
-                qangles.X = (float)Math.Atan2(-forward.Z, xyDist);
+                angles.X = (float)Math.Atan2(-forward.Z, xyDist);
   
                 // (roll)   z = ATAN( left.z, up.z );
-                qangles.Z = (float)Math.Atan2(left.Z, up.Z);
+                angles.Z = (float)Math.Atan2(left.Z, up.Z);
             }
             else    // forward is mostly Z, gimbal lock-
             {
                 // (yaw)    y = ATAN( -left.x, left.y );            -- forward is mostly z, so use right for yaw
-                qangles.Y = (float)Math.Atan2(-left.X, left.Y);
+                angles.Y = (float)Math.Atan2(-left.X, left.Y);
   
-                // The engine does pitch inverted from this, but we always end up negating it in the DLL
-                // UNDONE: Fix the engine to make it consistent
                 // (pitch)  x = ATAN( -forward.z, sqrt(forward.x*forward.x+forward.y*forward.y) );
-                qangles.X = (float)Math.Atan2(-forward.Z, xyDist);
+                angles.X = (float)Math.Atan2(-forward.Z, xyDist);
   
                 // Assume no roll in this case as one degree of freedom has been lost (i.e. yaw == roll)
-                qangles.Z = 0;
+                angles.Z = 0;
             }
 
-            return qangles;
-         }
+            return angles;
+        }
+  
     }
 }

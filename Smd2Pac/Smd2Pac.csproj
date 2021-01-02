@@ -48,7 +48,6 @@
   <ItemGroup>
     <Compile Include="LaunchArgs.cs" />
     <Compile Include="MathHelper.cs" />
-    <Compile Include="Matrix.cs" />
     <Compile Include="NoScientificNotationBS.cs" />
     <Compile Include="NumberedLine.cs" />
     <Compile Include="PacBonePose.cs" />
@@ -56,7 +55,6 @@
     <Compile Include="PacFrame.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Quaternion.cs" />
     <Compile Include="SmdBone.cs" />
     <Compile Include="SmdBonePose.cs" />
     <Compile Include="SmdData.cs" />

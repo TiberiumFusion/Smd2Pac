@@ -114,39 +114,25 @@ namespace TiberiumFusion.Smd2Pac
                             subtractedBonePose.Position -= subtractionBaseBonePose.Position;
 
                             // Rotation subtraction
-                            // This is more interesting. Basic idea: r = q * p^-1
-
-                            /* Generic subtraction method
-                             * Produces results that are correct but misaligned into some unknown coordinate space that isn't what Source uses
-                             * Notably, roll is negated and both pitch & yaw are halfway between correct and wrong
-                            Quaternion targetRot = Quaternion.FromYawPitchRoll(subtractedBonePose.Rotation.Y, subtractedBonePose.Rotation.X, subtractedBonePose.Rotation.Z);
-                            Quaternion baseRot = Quaternion.FromYawPitchRoll(subtractionBaseBonePose.Rotation.Y, subtractionBaseBonePose.Rotation.X, subtractionBaseBonePose.Rotation.Z);
-                            Quaternion difference = targetRot.Inverse() * baseRot; // Undo the base pose rot, then apply the other pose rot
-                            float yaw = 0f;
-                            float pitch = 0f;
-                            float roll = 0f;
-                            difference.ToYawPitchRoll(out yaw, out pitch, out roll); // Radians
-                            subtractedBonePose.Rotation.X = pitch;
-                            subtractedBonePose.Rotation.Y = yaw;
-                            subtractedBonePose.Rotation.Z = roll;
-                            */
-
-                            ///// Source engine specific subtraction method
-                            // Turn the SMD's yaw pitch roll into a quat with the usual calculations
-                            Quaternion targetRot = Quaternion.FromYawPitchRoll(subtractedBonePose.Rotation.Y, subtractedBonePose.Rotation.X, subtractedBonePose.Rotation.Z);
-                            Quaternion baseRot = Quaternion.FromYawPitchRoll(subtractionBaseBonePose.Rotation.Y, subtractionBaseBonePose.Rotation.X, subtractionBaseBonePose.Rotation.Z);
-                            // But from here on we do everything the way Source does it
-                            VQuaternion vTargetRot = new VQuaternion(targetRot.X, targetRot.Y, targetRot.Z, targetRot.W);
-                            VQuaternion vBaseRot = new VQuaternion(baseRot.X, baseRot.Y, baseRot.Z, baseRot.W);
-                            Vector3 differenceEngineAngles = VQuaternion.SMAngles(-1, vBaseRot, vTargetRot); // Radians
-                            subtractedBonePose.Rotation.X = differenceEngineAngles.X * 1;
-                            subtractedBonePose.Rotation.Y = differenceEngineAngles.Y * 1;
-                            subtractedBonePose.Rotation.Z = differenceEngineAngles.Z * 1;
+                            // This is much more interesting. Basic idea: r = q * p^-1
+                            
+                            // Turn the SMD's yaw pitch roll into a quat (these are QAngles, NOT RadianAngles!)
+                            Vector3 baseYPR = new Vector3(subtractionBaseBonePose.Rotation.Y, subtractionBaseBonePose.Rotation.Z, subtractionBaseBonePose.Rotation.X);
+                            Vector3 destYPR = new Vector3(subtractedBonePose.Rotation.Y, subtractedBonePose.Rotation.Z, subtractedBonePose.Rotation.X);
+                            VQuaternion baseRot = VQuaternion.FromQAngles(baseYPR);
+                            VQuaternion destRot = VQuaternion.FromQAngles(destYPR);
+                            Vector3 differenceRangles = VQuaternion.SMAngles(-1, baseRot, destRot); // RadianAngles(?)
+                                // X is pitch, Y is yaw, Z is roll
+                            subtractedBonePose.Rotation.X = differenceRangles.Z * 1;
+                            subtractedBonePose.Rotation.Y = differenceRangles.X * 1;
+                            subtractedBonePose.Rotation.Z = differenceRangles.Y * 1;
 
                             // In Source:
                             // - Pitch is rot X
                             // - Yaw is rot Y
                             // - Roll is rot Z
+                            // But not always! Because it's Valve!
+                            // Which is why we have to swizzle differenceRangles back into a QAngle, because SMAngles produces a RadianAngles!
                         }
                         else
                         {
