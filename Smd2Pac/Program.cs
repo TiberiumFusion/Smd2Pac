@@ -14,7 +14,7 @@ namespace TiberiumFusion.Smd2Pac
         static void Main(string[] args)
         {
             Version ver = Assembly.GetExecutingAssembly().GetName().Version;
-            Print("\n[-----     Smd2Pac " + ver.ToString() + "     -----]");
+            Print("\n-[-----     Smd2Pac " + ver.ToString() + "     -----]-");
 
             ///// Input reading
             LaunchArgs launchArgs = null;
@@ -30,7 +30,7 @@ namespace TiberiumFusion.Smd2Pac
             }
 
             ///// SMD parsing
-            Print("Reading SMD file \"" + launchArgs.SourceSmdFilePath + "\"...");
+            Print("Reading SMD file \"" + launchArgs.SourceSmdFilePath + "\"");
             SmdData smdData = null;
             try
             {
@@ -48,7 +48,7 @@ namespace TiberiumFusion.Smd2Pac
             }
 
             ///// Translation to PAC3 animation
-            Print("Creating PAC3 animation data...");
+            Print("Creating PAC3 animation data");
             PacCustomAnimation pacCustomAnim = null;
             try
             {
@@ -72,7 +72,7 @@ namespace TiberiumFusion.Smd2Pac
                 string pacAnimInterchange = JsonConvert.SerializeObject(pacCustomAnim, serializerSettings);
                 File.WriteAllText(launchArgs.OutputPacAnimDataPath, pacAnimInterchange);
 
-                Print("Done");
+                Print("File complete.");
             }
             catch (Exception e)
             {

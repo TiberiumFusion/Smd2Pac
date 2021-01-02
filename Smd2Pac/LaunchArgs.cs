@@ -11,7 +11,7 @@ namespace TiberiumFusion.Smd2Pac
     {
         public string SourceSmdFilePath { get; private set; } = null;
         public string OutputPacAnimDataPath { get; private set; } = null;
-        public int PacAnimDataOptimizeLevel { get; private set; } = 0;
+        public int PacAnimDataOptimizeLevel { get; private set; } = 1;
         public List<string> IgnoreBones { get; private set; } = new List<string>();
         public Dictionary<string, Vector3> BoneFixups { get; private set; } = new Dictionary<string, Vector3>();
 

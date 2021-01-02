@@ -15,7 +15,7 @@ namespace TiberiumFusion.Smd2Pac
             // Optimization
             // We can completely omit bones that do not ever animate (more than a given threshold)
             List<string> identityBones = new List<string>();
-            if (optimizeLevel >= 1 || true)
+            if (optimizeLevel >= 1)
             {
                 Dictionary<string, SmdBonePose> initialBonePoses = new Dictionary<string, SmdBonePose>();
                 HashSet<string> hasSignificantMovement = new HashSet<string>();
