@@ -14,7 +14,7 @@ namespace TiberiumFusion.Smd2Pac
                                          // One of: gesture, posture, sequence, stance
 
         [JsonProperty(Order = 2)]
-        public string Interpolation = "cosine"; // Type of frame interpolation
+        public string Interpolation = "linear"; // Type of frame interpolation
                                                 // One of: cosine, cubic, linear, none
         
         [JsonProperty(Order = 5)]

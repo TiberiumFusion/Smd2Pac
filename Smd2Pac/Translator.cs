@@ -38,9 +38,9 @@ namespace TiberiumFusion.Smd2Pac
                         if (initialBonePoses.TryGetValue(bonePose.Bone.Name, out lastBonePose))
                         {
                             if ( (bonePose.Position - lastBonePose.Position).Length() > 0.0001
-                                 || Math.Abs(bonePose.Rotation.X - lastBonePose.Rotation.X) > 0.01
-                                 || Math.Abs(bonePose.Rotation.Y - lastBonePose.Rotation.Y) > 0.01
-                                 || Math.Abs(bonePose.Rotation.Z - lastBonePose.Rotation.Z) > 0.01 )
+                                 || Math.Abs(bonePose.Rotation.X - lastBonePose.Rotation.X) > 0.0005
+                                 || Math.Abs(bonePose.Rotation.Y - lastBonePose.Rotation.Y) > 0.0005
+                                 || Math.Abs(bonePose.Rotation.Z - lastBonePose.Rotation.Z) > 0.0005 )
                                 hasSignificantMovement.Add(bonePose.Bone.Name);
                         }
                         else

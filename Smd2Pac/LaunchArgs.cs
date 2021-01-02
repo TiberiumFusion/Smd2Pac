@@ -10,6 +10,7 @@ namespace TiberiumFusion.Smd2Pac
     public class LaunchArgs
     {
         public string SourceSmdFilePath { get; private set; } = null;
+        public bool DeepSmdDirPath { get; private set; } = false;
         public string OutputPacAnimDataPath { get; private set; } = null;
         public bool EscapeOutputPacAnimData { get; private set; } = true;
         public int PacAnimDataOptimizeLevel { get; private set; } = 1;
@@ -32,6 +33,7 @@ namespace TiberiumFusion.Smd2Pac
         private static Dictionary<string, ArgDef> ValidArgs = new Dictionary<string, ArgDef>()
         {
             ["smd"] = new ArgDef(1, "--smd \"path\\to\\my file.smd\""),
+            ["deep"] = new ArgDef(0, "--deep"),
             ["output"] = new ArgDef(1, "--output \"path\\to\\my new pac3 anim data.txt\""),
             ["dont-escape-output"] = new ArgDef(0, "--dont-escape-output"),
             ["optimize"] = new ArgDef(1, "--optimize 1"),
@@ -121,6 +123,10 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     SourceSmdFilePath = argMultiValues[0];
                 }
+                else if (argKeyword == "deep")
+                {
+                    DeepSmdDirPath = true;
+                }
                 else if (argKeyword == "output")
                 {
                     OutputPacAnimDataPath = argMultiValues[0];
@@ -189,15 +195,8 @@ namespace TiberiumFusion.Smd2Pac
             // Smd file
             if (SourceSmdFilePath == null)
                 throw new Exception(ExceptionMessageNoSmd);
-            if (!File.Exists(SourceSmdFilePath))
-                throw new Exception("File specified by --smd argument does not exist.");
-
-            // Output path
-            if (OutputPacAnimDataPath == null)
-            {
-                int extSpot = SourceSmdFilePath.LastIndexOf('.');
-                OutputPacAnimDataPath = SourceSmdFilePath.Substring(0, extSpot) + "_pac3animdata.txt"; // Default output filename
-            }
+            if (!File.Exists(SourceSmdFilePath) && !Directory.Exists(SourceSmdFilePath))
+                throw new Exception("Invalid --smd path. No such file or directory exists.");
         }
     }
 }
