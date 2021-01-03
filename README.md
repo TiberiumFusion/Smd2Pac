@@ -1,5 +1,5 @@
 # Smd2Pac
-CLI application that converts SMD skeleton animations into PAC3 custom animation data. Also supports animation subtraction, which is pretty much a necessity for making any kind of animation look correct with pac.
+CLI application that converts SMD skeleton animations into PAC3 custom animation data for use in Garry's Mod. Also supports animation subtraction, which is pretty much a necessity for making any kind of animation look correct with pac.
 * Requires .NET 4.5.2 at minimum
 * No Source SDK dependencies
 * Does animation subtraction better than studiomdl/Crowbar
