@@ -204,7 +204,7 @@ namespace TiberiumFusion.Smd2Pac
                     if (boneFixups.TryGetValue(smdBonePose.Bone.Name, out boneFixup))
                     {
                         // The fixup translations inputted by the user should be in SMD coordinate space
-                        pacBonePose.MF += boneFixup.Item1.Y * -1;
+                        pacBonePose.MF += boneFixup.Item1.Y * -1; // So we can convert them into engine coordinate space
                         pacBonePose.MR += boneFixup.Item1.X * 1;
                         pacBonePose.MU += boneFixup.Item1.Z * 1;
 
