@@ -1,8 +1,11 @@
 # Smd2Pac
 CLI application that converts SMD skeleton animations into PAC3 custom animation data. Also supports animation subtraction, which is pretty much a necessity for making any kind of animation look correct with pac.
-* Requires .NET 4.5.2 or greater
+* Requires .NET 4.5.2 at minimum
 * No Source SDK dependencies
-* Does animation subtraction better than studiomdl
+* Does animation subtraction better than studiomdl/Crowbar
+
+### So... what's the point?
+Let's say you want to shamble around like the common infected from Left 4 Dead, but your favorite DarkRP server doesn't have any playermodels with the L4D animations. Lucky for you, Smd2Pac is gonna save your day. Grab the SMD animations for the common infected, convert them with Smd2Pac, copy & paste the converted data into your PAC3 outfit, and et voila! You now have zombie animations on any playermodel of your choosing (well, any valve biped), without needing any addons.
 
 ## How to use
 **Take a look at the [wiki pages](https://github.com/TiberiumFusion/Smd2Pac/wiki) for instructions and demos**
