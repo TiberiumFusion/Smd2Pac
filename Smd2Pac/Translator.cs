@@ -23,40 +23,6 @@ namespace TiberiumFusion.Smd2Pac
             // Work on a copy of the SmdData so we can do pose subtraction nondestructively
             SmdData smdData = untouchedSmdData.Clone();
 
-            ///// Optimization
-            // We can completely omit bones that do not ever animate (more than a given threshold)
-            List<string> staticBones = new List<string>();
-            if (optimizeLevel >= 1)
-            {
-                Dictionary<string, SmdBonePose> initialBonePoses = new Dictionary<string, SmdBonePose>();
-                HashSet<string> hasSignificantMovement = new HashSet<string>();
-                foreach (SmdTimelineFrame frame in smdData.Timeline.ExplicitFrames)
-                {
-                    foreach (SmdBonePose bonePose in frame.ExplicitBonePoses)
-                    {
-                        SmdBonePose lastBonePose = null;
-                        if (initialBonePoses.TryGetValue(bonePose.Bone.Name, out lastBonePose))
-                        {
-                            if ( (bonePose.Position - lastBonePose.Position).Length() > 0.0001
-                                 || Math.Abs(bonePose.Rotation.X - lastBonePose.Rotation.X) > 0.0005
-                                 || Math.Abs(bonePose.Rotation.Y - lastBonePose.Rotation.Y) > 0.0005
-                                 || Math.Abs(bonePose.Rotation.Z - lastBonePose.Rotation.Z) > 0.0005 )
-                                hasSignificantMovement.Add(bonePose.Bone.Name);
-                        }
-                        else
-                            initialBonePoses[bonePose.Bone.Name] = bonePose;
-                    }
-                }
-                foreach (SmdBone bone in smdData.Timeline.TargetSkeleton.Bones)
-                {
-                    if (!hasSignificantMovement.Contains(bone.Name))
-                    {
-                        staticBones.Add(bone.Name);
-                        Print("- Bone \"" + bone + "\" has virtually zero movement and has been optimized out", 1);
-                    }
-                }
-            }
-
 
             ///// Find frame for base pose subtraction
             SmdTimelineFrame subtractionBasePoseFrame = null;
@@ -170,10 +136,7 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     if (ignoreBones.Contains(smdBonePose.Bone.Name))
                         continue;
-
-                    if (optimizeLevel >= 1 && i > 0 && staticBones.Contains(smdBonePose.Bone.Name))
-                        continue;
-
+                    
                     PacBonePose pacBonePose = new PacBonePose();
 
                     /* SMD coordinate system:
@@ -219,7 +182,51 @@ namespace TiberiumFusion.Smd2Pac
                 pacAnim.FrameData.Add(pacFrame);
                 lastSmdFrameTime = smdFrame.FrameTime;
             }
+
             
+            ///// Optimization
+            // We can completely omit bones that have an extremely negligible transform (and thus no perceptible visual movement)
+            if (optimizeLevel >= 1)
+            {
+                // Get all bones that made it into the pac data
+                HashSet<string> allPacBones = new HashSet<string>();
+                foreach (PacFrame frame in pacAnim.FrameData)
+                    foreach (string boneName in frame.BoneInfo.Keys)
+                        allPacBones.Add(boneName);
+
+                // Find bones which have or are very close to a 0,0,0 0,0,0 transform for the entire animation, and thus will have no visual effect (pac3 animations are additive)
+                List<string> identityBones = new List<string>();
+                foreach (string pacBoneName in allPacBones)
+                {
+                    bool nearIdentity = true;
+                    foreach (PacFrame frame in pacAnim.FrameData)
+                    {
+                        PacBonePose pose = null;
+                        if (frame.BoneInfo.TryGetValue(pacBoneName, out pose))
+                        {
+                            if (new Vector3(pose.MF, pose.MR, pose.MU).Length() > 0.0001 || pose.RF > 0.0005 || pose.RR > 0.0005 || pose.RU > 0.0005)
+                            {
+                                nearIdentity = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (nearIdentity)
+                        identityBones.Add(pacBoneName);
+                }
+
+                // Remove those bones from all frames of the animation
+                foreach (string pacBoneName in identityBones)
+                {
+                    foreach (PacFrame frame in pacAnim.FrameData)
+                        frame.BoneInfo.Remove(pacBoneName);
+
+                    Print("- Bone \"" + pacBoneName + "\" has virtually zero movement and has been optimized out", 1);
+                }
+            }
+
+
             // Return subtracted SMD data for dumping
             if (subtractionBaseSmd != null)
                 subtractedSmdData = smdData;
