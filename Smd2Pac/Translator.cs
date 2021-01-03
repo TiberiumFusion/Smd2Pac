@@ -126,6 +126,7 @@ namespace TiberiumFusion.Smd2Pac
                             Vector3 destYPR = new Vector3(subtractedBonePose.Rotation.Y, subtractedBonePose.Rotation.Z, subtractedBonePose.Rotation.X);
                             VQuaternion baseRot = VQuaternion.FromQAngles(baseYPR);
                             VQuaternion destRot = VQuaternion.FromQAngles(destYPR);
+                            // Undo the base animation, then apply the destination animation
                             Vector3 differenceRangles = VQuaternion.SMAngles(-1, baseRot, destRot); // RadianAngles?
                                 // X is pitch, Y is yaw, Z is roll
                             subtractedBonePose.Rotation.X = differenceRangles.Z * 1;
