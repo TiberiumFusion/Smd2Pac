@@ -3,7 +3,9 @@ CLI application that converts SMD skeleton animations into PAC3 custom animation
 * Requires .NET 4.5.2 or greater
 * No Source SDK dependencies
 * Does animation subtraction better than studiomdl
-* Take a look at the [wiki pages](https://github.com/TiberiumFusion/Smd2Pac/wiki) for instructions and demos
+
+## How to use
+**Take a look at the [wiki pages](https://github.com/TiberiumFusion/Smd2Pac/wiki) for instructions and demos**
 
 Smd2Pac fits into any workflow that ends with an SMD file. You can use it with SMDs decompiled by Crowbar or with SMD exports from software like Maya or Blender.
 
