@@ -72,7 +72,7 @@ namespace TiberiumFusion.Smd2Pac
             // Check the rest like usual
             for (int i = 0; i < parseArgs.Count; i++)
             {
-                string userArg = parseArgs[i].ToLowerInvariant();
+                string userArg = parseArgs[i].ToLowerInvariant().Replace('‑', '-'); // Replace nonbreaking hyphen with hyphens (in case the user copy-pastes from this project's github wiki... because github doesn't know how to set the width of a table column in 2021...)
 
                 string argKeyword = StringIsArgKeyword(userArg);
                 List<string> argMultiValues = new List<string>();
