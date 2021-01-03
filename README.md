@@ -7,8 +7,8 @@ CLI application that converts SMD skeleton animations into PAC3 custom animation
 ### So... what's the point?
 Let's say you want to shamble around like the common infected from Left 4 Dead, but your favorite DarkRP server doesn't have any playermodels with the L4D animations. Lucky for you, Smd2Pac is gonna save your day. Grab the SMD animations for the common infected, convert them with Smd2Pac, copy & paste the converted data into your PAC3 outfit, and et voila! You now have zombie animations on any playermodel of your choosing (well, any valve biped), without needing any addons.
 
-## How to use
-**Take a look at the [wiki pages](https://github.com/TiberiumFusion/Smd2Pac/wiki) for instructions and demos**
+## Usage
+### Go to the [wiki pages](https://github.com/TiberiumFusion/Smd2Pac/wiki) for complete instructions
 
 Smd2Pac fits into any workflow that ends with an SMD file. You can use it with SMDs decompiled by Crowbar or with SMD exports from software like Maya or Blender.
 
