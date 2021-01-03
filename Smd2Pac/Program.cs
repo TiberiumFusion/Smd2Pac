@@ -117,8 +117,9 @@ namespace TiberiumFusion.Smd2Pac
                 ///// Subtracted SMD data dump to file
                 if (launchArgs.DumpSubtractedSmd && subtractedSmdData != null)
                 {
-                    Directory.CreateDirectory("subtracted smds");
-                    string subtractedSmdDumpFilename = Path.Combine("subtracted smds", Path.GetFileNameWithoutExtension(smdData.SourceFilename) + "_subtracted.smd");
+                    string outputDir = Path.Combine(Path.GetDirectoryName(smdFilename), "subtracted smds");
+                    Directory.CreateDirectory(outputDir);
+                    string subtractedSmdDumpFilename = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(smdData.SourceFilename) + "_subtracted.smd");
                     Print("Dumping subtracted SMD data to \"" + subtractedSmdDumpFilename + "\"");
                     try
                     {
@@ -135,10 +136,10 @@ namespace TiberiumFusion.Smd2Pac
                 string outputFilename = launchArgs.OutputPacAnimDataPath;
                 if (outputFilename == null)
                 {
-                    // Default output name
-                    int extSpot = smdFilename.LastIndexOf('.');
-                    Directory.CreateDirectory("output");
-                    outputFilename = Path.Combine("output", smdFilename.Substring(0, extSpot) + "_pac3animdata.txt");
+                    // Default output path
+                    string outputDir = Path.Combine(Path.GetDirectoryName(smdFilename), "output");
+                    Directory.CreateDirectory(outputDir);
+                    outputFilename = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(smdFilename) + "_pac3animdata.txt");
                 }
                 Print("Writing PAC3 animation data to \"" + outputFilename + "\"");
                 try
