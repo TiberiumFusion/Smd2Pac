@@ -25,7 +25,7 @@ namespace TiberiumFusion.Smd2Pac
 
             ///// Optimization
             // We can completely omit bones that do not ever animate (more than a given threshold)
-            List<string> identityBones = new List<string>();
+            List<string> staticBones = new List<string>();
             if (optimizeLevel >= 1)
             {
                 Dictionary<string, SmdBonePose> initialBonePoses = new Dictionary<string, SmdBonePose>();
@@ -51,7 +51,7 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     if (!hasSignificantMovement.Contains(bone.Name))
                     {
-                        identityBones.Add(bone.Name);
+                        staticBones.Add(bone.Name);
                         Print("- Bone \"" + bone + "\" has virtually zero movement and has been optimized out", 1);
                     }
                 }
@@ -170,7 +170,7 @@ namespace TiberiumFusion.Smd2Pac
                     if (ignoreBones.Contains(smdBonePose.Bone.Name))
                         continue;
 
-                    if (optimizeLevel >= 1 && identityBones.Contains(smdBonePose.Bone.Name))
+                    if (optimizeLevel >= 1 && i > 0 && staticBones.Contains(smdBonePose.Bone.Name))
                         continue;
 
                     PacBonePose pacBonePose = new PacBonePose();
