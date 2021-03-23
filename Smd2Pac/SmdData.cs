@@ -249,7 +249,7 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     NumberedLine boneline = timeBlock[i];
                     string bonelinetext = boneline.Text.Trim();
-                    string[] bonelinetextParts = bonelinetext.Split(' ');
+                    string[] bonelinetextParts = bonelinetext.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
                     if (bonelinetextParts.Length != 7)
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Bone pose data is an invalid format."));
