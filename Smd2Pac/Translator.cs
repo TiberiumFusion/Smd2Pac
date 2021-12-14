@@ -16,6 +16,7 @@ namespace TiberiumFusion.Smd2Pac
                                                   Dictionary<string, Tuple<Vector3, Vector3>> boneFixups,
                                                   SmdData subtractionBaseSmd,
                                                   int subtractionBaseFrame,
+                                                  bool hideWarnings,
                                                   out SmdData subtractedSmdData)
         {
             PacCustomAnimation pacAnim = new PacCustomAnimation();
@@ -108,8 +109,11 @@ namespace TiberiumFusion.Smd2Pac
                         }
                         else
                         {
-                            Print("- [WARNING] Frame " + smdFrame.FrameTime + " subtraction: Bone " + subtractedBonePose.Bone.Name + " is not present in the subtraction base pose frame.", 1);
-                            // Pose subtraction should really only be be done on sequences that have identical skeletons with every bone posed
+                            if (hideWarnings)
+                            {
+                                Print("- [WARNING] Frame " + smdFrame.FrameTime + " subtraction: Bone " + subtractedBonePose.Bone.Name + " is not present in the subtraction base pose frame.", 1);
+                                // Pose subtraction should really only be be done on sequences that have identical skeletons with every bone posed
+                            }
                         }
                     }
                 }
@@ -139,20 +143,34 @@ namespace TiberiumFusion.Smd2Pac
                     
                     PacBonePose pacBonePose = new PacBonePose();
 
-                    /* SMD coordinate system:
-                     *   +X: right/"north"
-                     *   +Y: backward/"west"
-                     *   +Z: up
+                    /* Just like QAngles and RAngles, coordinates are not consistent either because Valve is Valve
+                     * 
+                     * SMD coordinate system:
+                     *   +X: North on the compass.
+                     *   +Y: East on the compass.
+                     *   +Z: Up.
+                     *   
+                     *   - With your RIGHT hand, stick out your thumb, index finger, and middle finger in a kind of L shape.
+                     *   - All 3 digits should form right angles with each other.
+                     *   - Your index finger is +X, your thumb is +Y, and your middle finger is +Z.
+                     *   - Twist your hand so your *index finger* is pointing directly forward in front of you and your middle finger is pointing at the sky.
+                     *   
                      * Source engine coordinate system:
-                     *   +X: forward/"north"
-                     *   +Y: right/"east"
-                     *   +Z: up
-                     * Conversion from SMD to engine: rotate -90 degree on +Z
+                     *   +X: East on the compass. Moving forward (W) ingame moves you +X.
+                     *   +Y: North on the compass. Moving left (A) ingame moves you +Y.
+                     *   +Z: Up.
+                     *   
+                     *   - With your LEFT hand, stick out your thumb, index finger, and middle finger in a kind of L shape.
+                     *   - All 3 digits should form right angles with each other.
+                     *   - Your index finger is +X, your thumb is +Y, and your middle finger is +Z.
+                     *   - Twist your hand so your *thumb* is pointing at your monitor and your middle finger is pointing at the sky.
+                     *   
+                     * Conversion from SMD to engine: Swap X and Y, then negate both.
                     */
 
                     // Translation (including coordinate system conversion via swizzled x and y)
                     pacBonePose.MF = smdBonePose.Position.Y * -1;
-                    pacBonePose.MR = smdBonePose.Position.X * 1;
+                    pacBonePose.MR = smdBonePose.Position.X * -1;
                     pacBonePose.MU = smdBonePose.Position.Z * 1;
 
                     // Rotation
@@ -168,7 +186,7 @@ namespace TiberiumFusion.Smd2Pac
                     {
                         // The fixup translations inputted by the user should be in SMD coordinate space
                         pacBonePose.MF += boneFixup.Item1.Y * -1; // So we can convert them into engine coordinate space
-                        pacBonePose.MR += boneFixup.Item1.X * 1;
+                        pacBonePose.MR += boneFixup.Item1.X * -1;
                         pacBonePose.MU += boneFixup.Item1.Z * 1;
 
                         pacBonePose.RF += boneFixup.Item2.X * 1;

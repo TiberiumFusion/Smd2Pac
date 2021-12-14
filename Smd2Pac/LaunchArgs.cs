@@ -19,6 +19,7 @@ namespace TiberiumFusion.Smd2Pac
         public string SubtractionBaseSmd { get; private set; } = null;
         public int SubtractionBaseFrame { get; private set; } = 0;
         public bool DumpSubtractedSmd { get; private set; } = false;
+        public bool HideWarnings { get; private set; } = false;
 
         private class ArgDef
         {
@@ -42,6 +43,7 @@ namespace TiberiumFusion.Smd2Pac
             ["make-additive-from"] = new ArgDef(1, "--make-additive-from \"path\\to\\reference pose.smd\""),
             ["additive-base-frame"] = new ArgDef(1, "--additive-base-frame 0"),
             ["dump-additive-smd"] = new ArgDef(0, "--dump-additive-smd"),
+            ["hide-warnings"] = new ArgDef(0, "--hide-warnings"),
         };
 
         private static string StringIsArgKeyword(string s)
@@ -187,6 +189,10 @@ namespace TiberiumFusion.Smd2Pac
                 else if (argKeyword == "dump-additive-smd")
                 {
                     DumpSubtractedSmd = true;
+                }
+                else if (argKeyword == "deep")
+                {
+                    HideWarnings = true;
                 }
             }
 

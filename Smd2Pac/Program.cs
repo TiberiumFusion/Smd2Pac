@@ -105,6 +105,7 @@ namespace TiberiumFusion.Smd2Pac
                                                        launchArgs.BoneFixups,
                                                        basePoseSmdData,
                                                        launchArgs.SubtractionBaseFrame,
+                                                       launchArgs.HideWarnings,
                                                        out subtractedSmdData);
                 }
                 catch (Exception e)
