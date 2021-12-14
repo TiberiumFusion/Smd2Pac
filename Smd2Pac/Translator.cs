@@ -169,7 +169,7 @@ namespace TiberiumFusion.Smd2Pac
                      *   - This is "correct" (for direct bone manipulation as intended), but does not work with pac3.
                      * 
                      * Conversion from SMD to pac3: Swap X and Y, then negate both.
-                     *   - This is because for some bizarre reason, pac uses an unorthodox coordinate space that assumes +Y is "backward" instead of "forward".
+                     *   - This is because for some bizarre reason, pac uses an unorthodox coordinate space that assumes +Y is *south* on the compass.
                      *   - The various pac3 elements that manipulate bone position blindly negate the "MR" value (Y translation), so we have to adhere to that.
                     */
 
