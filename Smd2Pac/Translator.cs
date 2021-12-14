@@ -165,7 +165,12 @@ namespace TiberiumFusion.Smd2Pac
                      *   - Your index finger is +X, your thumb is +Y, and your middle finger is +Z.
                      *   - Twist your hand so your *thumb* is pointing at your monitor and your middle finger is pointing at the sky.
                      *   
-                     * Conversion from SMD to engine: Swap X and Y, then negate both.
+                     * Conversion from SMD to engine: Swap X and Y, then negate the new X.
+                     *   - This is "correct" (for direct bone manipulation as intended), but does not work with pac3.
+                     * 
+                     * Conversion from SMD to pac3: Swap X and Y, then negate both.
+                     *   - This is because for some bizarre reason, pac uses an unorthodox coordinate space that assumes +Y is "backward" instead of "forward".
+                     *   - The various pac3 elements that manipulate bone position blindly negate the "MR" value (Y translation), so we have to adhere to that.
                     */
 
                     // Translation (including coordinate system conversion via swizzled x and y)
