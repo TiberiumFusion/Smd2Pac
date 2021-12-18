@@ -74,18 +74,19 @@ namespace TiberiumFusion.Smd2Pac
             // Check the rest like usual
             for (int i = 0; i < parseArgs.Count; i++)
             {
+                bool rewindForNextArg = false;
+
                 string userArg = parseArgs[i].ToLowerInvariant().Replace('‑', '-'); // Replace nonbreaking hyphen with hyphens (in case the user copy-pastes from this project's github wiki... because github doesn't know how to set the width of a table column in 2021...)
 
                 string argKeyword = StringIsArgKeyword(userArg);
                 List<string> argMultiValues = new List<string>();
-                
+
                 if (argKeyword != null)
                 {
                     ArgDef argDef = ValidArgs[argKeyword];
                     if (argDef.RequiresValue != 0)
                     {
                         bool anyCount = (argDef.RequiresValue == -1);
-                        bool rewindForNextArg = false;
                         int t;
                         for (t = i + 1; t < parseArgs.Count; t++)
                         {
@@ -113,15 +114,7 @@ namespace TiberiumFusion.Smd2Pac
                             if (!anyCount && t == parseArgs.Count - 1 && argMultiValues.Count < argDef.RequiresValue)
                                 throw new Exception("Insufficient number of values for argument --" + argKeyword + ".\n  Example usage: " + argDef.Example);
                         }
-                        if (rewindForNextArg)
-                        {
-                            i = t - 1;
-                            continue;
-                        }
-                        else
-                        {
-                            i = t;
-                        }
+                        i = t;
                         
                         if (argMultiValues.Count < argDef.RequiresValue)
                             throw new Exception("Not enough values for argument --" + argKeyword + ".\n  Example usage: " + argDef.Example);
@@ -206,6 +199,9 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     HideWarnings = true;
                 }
+
+                if (rewindForNextArg)
+                    i--;
             }
 
             ///// Defaults and final validation
