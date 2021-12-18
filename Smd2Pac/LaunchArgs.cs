@@ -49,7 +49,7 @@ namespace TiberiumFusion.Smd2Pac
         private static string StringIsArgKeyword(string s)
         {
             foreach (string argKeyword in ValidArgs.Keys)
-                if (s == "-" + argKeyword || s == "--" + argKeyword)
+                if (s == "--" + argKeyword)
                     return argKeyword;
             return null;
         }
@@ -78,13 +78,14 @@ namespace TiberiumFusion.Smd2Pac
 
                 string argKeyword = StringIsArgKeyword(userArg);
                 List<string> argMultiValues = new List<string>();
-
+                
                 if (argKeyword != null)
                 {
                     ArgDef argDef = ValidArgs[argKeyword];
                     if (argDef.RequiresValue != 0)
                     {
-                        bool anyCount = argDef.RequiresValue == -1;
+                        bool anyCount = (argDef.RequiresValue == -1);
+                        bool rewindForNextArg = false;
                         int t;
                         for (t = i + 1; t < parseArgs.Count; t++)
                         {
@@ -92,7 +93,10 @@ namespace TiberiumFusion.Smd2Pac
                             if (StringIsArgKeyword(nextArg) != null)
                             {
                                 if (anyCount)
+                                {
+                                    rewindForNextArg = true;
                                     break;
+                                }
                                 else
                                 {
                                     if (argMultiValues.Count < argDef.RequiresValue)
@@ -109,7 +113,15 @@ namespace TiberiumFusion.Smd2Pac
                             if (!anyCount && t == parseArgs.Count - 1 && argMultiValues.Count < argDef.RequiresValue)
                                 throw new Exception("Insufficient number of values for argument --" + argKeyword + ".\n  Example usage: " + argDef.Example);
                         }
-                        i = t;
+                        if (rewindForNextArg)
+                        {
+                            i = t - 1;
+                            continue;
+                        }
+                        else
+                        {
+                            i = t;
+                        }
                         
                         if (argMultiValues.Count < argDef.RequiresValue)
                             throw new Exception("Not enough values for argument --" + argKeyword + ".\n  Example usage: " + argDef.Example);
