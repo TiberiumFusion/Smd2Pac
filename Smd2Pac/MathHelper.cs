@@ -20,7 +20,7 @@ namespace TiberiumFusion.Smd2Pac
             return (float)(degrees * Math.PI / 180.0);
         }
 
-        public static float Normalize(float val, float min, float max)
+        public static float PeriodicClamp(float val, float min, float max)
         {
             max -= min;
             if (max == 0)

@@ -199,6 +199,11 @@ namespace TiberiumFusion.Smd2Pac
                         pacBonePose.RU += boneFixup.Item2.Z * 1;
                     }
 
+                    // Keep rotations in -180 to 180 range or else Source gets real unhappy
+                    pacBonePose.RF = MathHelper.PeriodicClamp(pacBonePose.RF, -180, 180);
+                    pacBonePose.RR = MathHelper.PeriodicClamp(pacBonePose.RR, -180, 180);
+                    pacBonePose.RU = MathHelper.PeriodicClamp(pacBonePose.RU, -180, 180);
+
                     pacFrame.BoneInfo[smdBonePose.Bone.Name] = pacBonePose;
                 }
 
