@@ -155,6 +155,7 @@ namespace TiberiumFusion.Smd2Pac
                     if (launchArgs.EscapeOutputPacAnimData)
                         pacAnimJson = HttpUtility.JavaScriptStringEncode(pacAnimJson, false); // Since PAC3 outfits are json themself, the json anim data itself must be escaped (quotes, mainly)
 
+                    Directory.CreateDirectory(Path.GetDirectoryName(outputFilename)); // Ensure output folder hierarchy exists
                     File.WriteAllText(outputFilename, pacAnimJson);
                     Print("File complete.");
                 }
