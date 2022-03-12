@@ -30,7 +30,9 @@ namespace TiberiumFusion.Smd2Pac
                 return;
             }
             foreach (string badArg in launchArgs.UnknownArguments)
-                Print("Ignoring unknown argument: " + badArg, 0, "- ");
+                Print("Ignoring unknown argument: " + badArg, 0);
+            if (launchArgs.UnknownArguments.Count > 0)
+                Print("");
 
             ///// Base SMD pose parsing
             SmdData basePoseSmdData = null;
