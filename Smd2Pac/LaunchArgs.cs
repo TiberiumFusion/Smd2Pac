@@ -195,7 +195,7 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     DumpSubtractedSmd = true;
                 }
-                else if (argKeyword == "deep")
+                else if (argKeyword == "hide-warnings")
                 {
                     HideWarnings = true;
                 }

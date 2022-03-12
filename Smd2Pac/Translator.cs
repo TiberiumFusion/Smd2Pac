@@ -109,7 +109,7 @@ namespace TiberiumFusion.Smd2Pac
                         }
                         else
                         {
-                            if (hideWarnings)
+                            if (!hideWarnings)
                             {
                                 Print("- [WARNING] Frame " + smdFrame.FrameTime + " subtraction: Bone " + subtractedBonePose.Bone.Name + " is not present in the subtraction base pose frame.", 1);
                                 // Pose subtraction should really only be be done on sequences that have identical skeletons with every bone posed
