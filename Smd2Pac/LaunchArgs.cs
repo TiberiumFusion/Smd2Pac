@@ -21,6 +21,10 @@ namespace TiberiumFusion.Smd2Pac
         public bool DumpSubtractedSmd { get; private set; } = false;
         public bool HideWarnings { get; private set; } = false;
 
+        public List<string> UnknownArguments { get; private set; } = new List<string>();
+        
+        private bool UsedSmdArg = false; // True when --smd is present (i.e. no implicit smd arg)
+
         private class ArgDef
         {
             internal int RequiresValue = 0;
@@ -76,7 +80,7 @@ namespace TiberiumFusion.Smd2Pac
             {
                 bool rewindForNextArg = false;
 
-                string userArg = parseArgs[i].ToLowerInvariant().Replace('‑', '-'); // Replace nonbreaking hyphen with hyphens (in case the user copy-pastes from this project's github wiki... because github doesn't know how to set the width of a table column in 2021...)
+                string userArg = parseArgs[i].ToLowerInvariant().Replace('‑', '-'); // Replace nonbreaking hyphen with hyphens (in case the user copy-pastes from this project's github wiki... because github doesn't know how to set the width of a table column in 2022...)
 
                 string argKeyword = StringIsArgKeyword(userArg);
                 List<string> argMultiValues = new List<string>();
@@ -122,12 +126,15 @@ namespace TiberiumFusion.Smd2Pac
                 }
                 else
                 {
-                    if (i == parseArgs.Count - 1)
-                        SourceSmdFilePath = userArg; // Assume the final arg is the smd file path if it's not following any arg keyword
+                    if (i == parseArgs.Count - 1 && (userArg.Length >= 2 && userArg.Substring(0, 2) != "--") && !UsedSmdArg)
+                        SourceSmdFilePath = userArg; // Assume this final arg is the smd file path
+                    else
+                        UnknownArguments.Add(userArg); // Unknown/invalid argument
                 }
 
                 if (argKeyword == "smd")
                 {
+                    UsedSmdArg = true;
                     SourceSmdFilePath = argMultiValues[0];
                 }
                 else if (argKeyword == "deep")
@@ -210,7 +217,7 @@ namespace TiberiumFusion.Smd2Pac
             if (SourceSmdFilePath == null)
                 throw new Exception(ExceptionMessageNoSmd);
             if (!File.Exists(SourceSmdFilePath) && !Directory.Exists(SourceSmdFilePath))
-                throw new Exception("Invalid --smd path. No such file or directory exists.");
+                throw new Exception("Invalid --smd path: \"" + SourceSmdFilePath + "\". No such file or directory exists.");
         }
     }
 }

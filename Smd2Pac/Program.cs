@@ -29,6 +29,8 @@ namespace TiberiumFusion.Smd2Pac
                 Print(e.Message, 1, "- ");
                 return;
             }
+            foreach (string badArg in launchArgs.UnknownArguments)
+                Print("Ignoring unknown argument: " + badArg, 0, "- ");
 
             ///// Base SMD pose parsing
             SmdData basePoseSmdData = null;
