@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -46,7 +47,14 @@ namespace TiberiumFusion.Smd2Pac
 
 
             //
-            // Pre-process
+            // Preparation
+            //
+
+            CultureInfo parseNumberCulture = GlobalConfiguration.DecimalStringParsingCulture;
+            
+
+            //
+            // Pre-process SMD lines
             //
 
             // Associate line numbers with source data
@@ -148,9 +156,9 @@ namespace TiberiumFusion.Smd2Pac
                 string[] linetextParts = linetext.Split(' '); // This is ok because source engine bones cannot have spaces in their names
                 if (linetextParts.Length != 3)
                     throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is an invalid format."));
-
+                
                 int boneID = -1;
-                if (!int.TryParse(linetextParts[0], out boneID))
+                if (!int.TryParse(linetextParts[0], NumberStyles.Integer, parseNumberCulture, out boneID))
                     throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is invalid; bone ID is not a valid number."));
 
                 string boneName = linetextParts[1].Trim('"'); // Trim the " quotes that always present but useless
@@ -160,7 +168,7 @@ namespace TiberiumFusion.Smd2Pac
                     throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is invalid; duplicate bone name."));
 
                 int boneParentID = -2;
-                if (!int.TryParse(linetextParts[2], out boneParentID))
+                if (!int.TryParse(linetextParts[2], NumberStyles.Integer, parseNumberCulture, out boneParentID))
                     throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is invalid; bone parent ID is not a valid number."));
 
                 SmdBone bone = new SmdBone(boneID, boneName, boneParentID);
@@ -227,7 +235,7 @@ namespace TiberiumFusion.Smd2Pac
                         throw new Exception(ErrInvalid(line.LineNumber, "Invalid \"time\" block header."));
 
                     int timeNumber = -1;
-                    if (!int.TryParse(linetextParts[1], out timeNumber))
+                    if (!int.TryParse(linetextParts[1], NumberStyles.Integer, parseNumberCulture, out timeNumber))
                         throw new Exception(ErrInvalid(line.LineNumber, "\"time\" block number is not a valid number."));
 
                     if (timeNumber <= lastTimeNumber)
@@ -275,27 +283,27 @@ namespace TiberiumFusion.Smd2Pac
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Bone pose data is an invalid format."));
 
                     int boneID = -1;
-                    if (!int.TryParse(bonelinetextParts[0], out boneID))
+                    if (!int.TryParse(bonelinetextParts[0], NumberStyles.Integer, parseNumberCulture, out boneID))
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone ID is not a valid number."));
 
                     float bonePosX = 0f;
-                    if (!float.TryParse(bonelinetextParts[1], out bonePosX))
+                    if (!float.TryParse(bonelinetextParts[1], NumberStyles.Float, parseNumberCulture, out bonePosX))
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone X translation is not a valid number."));
                     float bonePosY = 0f;
-                    if (!float.TryParse(bonelinetextParts[2], out bonePosY))
+                    if (!float.TryParse(bonelinetextParts[2], NumberStyles.Float, parseNumberCulture, out bonePosY))
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone Y translation is not a valid number."));
                     float bonePosZ = 0f;
-                    if (!float.TryParse(bonelinetextParts[3], out bonePosZ))
+                    if (!float.TryParse(bonelinetextParts[3], NumberStyles.Float, parseNumberCulture, out bonePosZ))
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone Z translation is not a valid number."));
 
                     float boneRotX = 0f;
-                    if (!float.TryParse(bonelinetextParts[4], out boneRotX))
+                    if (!float.TryParse(bonelinetextParts[4], NumberStyles.Float, parseNumberCulture, out boneRotX))
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone X rotation is not a valid number."));
                     float boneRotY = 0f;
-                    if (!float.TryParse(bonelinetextParts[5], out boneRotY))
+                    if (!float.TryParse(bonelinetextParts[5], NumberStyles.Float, parseNumberCulture, out boneRotY))
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone Y rotation is not a valid number."));
                     float boneRotZ = 0f;
-                    if (!float.TryParse(bonelinetextParts[6], out boneRotZ))
+                    if (!float.TryParse(bonelinetextParts[6], NumberStyles.Float, parseNumberCulture, out boneRotZ))
                         throw new Exception(ErrInvalid(boneline.LineNumber, "Invalid bone pose; bone Z rotation is not a valid number."));
                     
                     SmdBonePose bonePose = new SmdBonePose();
@@ -324,6 +332,13 @@ namespace TiberiumFusion.Smd2Pac
         // Writes this SmdData back into ascii lines
         public string[] ToLines(bool bakeAnimationFrames = false)
         {
+            //
+            // Preparation
+            //
+
+            CultureInfo writeNumberCulture = GlobalConfiguration.DecimalStringWritingCulture;
+
+
             List<string> lines = new List<string>();
 
             // Header
@@ -333,7 +348,7 @@ namespace TiberiumFusion.Smd2Pac
             // Nodes
             lines.Add("nodes");
             foreach (SmdBone bone in Skeleton.Bones)
-                lines.Add("    " + bone.ID + " \"" + bone.Name + "\" " + bone.ParentID);
+                lines.Add("    " + bone.ID.ToString(writeNumberCulture) + " \"" + bone.Name + "\" " + bone.ParentID.ToString(writeNumberCulture));
             lines.Add("end");
 
             // Animation
@@ -344,17 +359,17 @@ namespace TiberiumFusion.Smd2Pac
                 if (bakeAnimationFrames)
                     frame = frame.GetBakedFrame();
 
-                lines.Add("    time " + frame.FrameTime);
+                lines.Add("    time " + frame.FrameTime.ToString(writeNumberCulture));
                 
                 foreach (SmdBonePose bonePose in frame.ExplicitBonePoses)
                 {
                     lines.Add("        " + bonePose.Bone.ID
-                              + " " + bonePose.Position.X.ToString("F6")
-                              + " " + bonePose.Position.Y.ToString("F6")
-                              + " " + bonePose.Position.Z.ToString("F6")
-                              + " " + bonePose.Rotation.X.ToString("F6")
-                              + " " + bonePose.Rotation.Y.ToString("F6")
-                              + " " + bonePose.Rotation.Z.ToString("F6"));
+                              + " " + bonePose.Position.X.ToString("F6", writeNumberCulture)
+                              + " " + bonePose.Position.Y.ToString("F6", writeNumberCulture)
+                              + " " + bonePose.Position.Z.ToString("F6", writeNumberCulture)
+                              + " " + bonePose.Rotation.X.ToString("F6", writeNumberCulture)
+                              + " " + bonePose.Rotation.Y.ToString("F6", writeNumberCulture)
+                              + " " + bonePose.Rotation.Z.ToString("F6", writeNumberCulture));
                 }
             }
             lines.Add("end");

@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GlobalConfiguration.cs" />
     <Compile Include="LaunchArgs.cs" />
     <Compile Include="MathHelper.cs" />
     <Compile Include="NoScientificNotationBS.cs" />

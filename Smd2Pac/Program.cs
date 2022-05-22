@@ -1,10 +1,12 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -28,6 +30,12 @@ namespace TiberiumFusion.Smd2Pac
             try
             {
                 launchArgs = new LaunchArgs(args);
+
+                // Most launch args are merely passed to the translator, which is the bulk of this application
+                // Some args, however, specify program operation at a higher scope
+
+                GlobalConfiguration.ParseNumericStringsWithSystemLocale = launchArgs.ParseWithSystemLocale;
+                GlobalConfiguration.WriteNumericStringsWithSystemLocale = launchArgs.WriteWithSystemLocale;
             }
             catch (Exception e)
             {
@@ -188,6 +196,7 @@ namespace TiberiumFusion.Smd2Pac
                     serializerSettings.FloatFormatHandling = FloatFormatHandling.String;
                     serializerSettings.Formatting = Formatting.None;
                     serializerSettings.Converters.Add(new NoScientificNotationBS());
+                    serializerSettings.Culture = GlobalConfiguration.DecimalStringWritingCulture;
                     string pacAnimJson = JsonConvert.SerializeObject(pacCustomAnim, serializerSettings);
 
                     if (launchArgs.EscapeOutputPacAnimData)

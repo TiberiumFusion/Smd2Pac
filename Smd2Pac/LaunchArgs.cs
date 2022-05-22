@@ -26,6 +26,8 @@ namespace TiberiumFusion.Smd2Pac
         public int SubtractionBaseFrame { get; private set; } = 0;
         public bool DumpSubtractedSmd { get; private set; } = false;
         public bool HideWarnings { get; private set; } = false;
+        public bool ParseWithSystemLocale { get; private set; } = false;
+        public bool WriteWithSystemLocale { get; private set; } = false;
 
         public List<string> UnknownArguments { get; private set; } = new List<string>();
         
@@ -54,6 +56,8 @@ namespace TiberiumFusion.Smd2Pac
             ["additive-base-frame"] = new ArgDef(1, "--additive-base-frame 0"),
             ["dump-additive-smd"] = new ArgDef(0, "--dump-additive-smd"),
             ["hide-warnings"] = new ArgDef(0, "--hide-warnings"),
+            ["parse-with-system-locale"] = new ArgDef(0, "--parse-with-system-locale"),
+            ["write-with-system-locale"] = new ArgDef(0, "--write-with-system-locale"),
         };
 
         private static string StringIsArgKeyword(string s)
@@ -222,6 +226,14 @@ namespace TiberiumFusion.Smd2Pac
                 else if (argKeyword == "hide-warnings")
                 {
                     HideWarnings = true;
+                }
+                else if (argKeyword == "parse-with-system-locale")
+                {
+                    ParseWithSystemLocale = true;
+                }
+                else if (argKeyword == "write-with-system-locale")
+                {
+                    WriteWithSystemLocale = true;
                 }
 
                 if (rewindForNextArg)
