@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace TiberiumFusion.Smd2Pac.ValveMath
 {
     // 3x4 matrix with functions from the 2007 SDK
+    // Original Valve comments are preserved alongside my own comments
     public struct VMatrix
     {
         /* Source init reference:

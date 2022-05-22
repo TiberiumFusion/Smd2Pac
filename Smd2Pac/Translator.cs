@@ -10,6 +10,12 @@ namespace TiberiumFusion.Smd2Pac
 {
     public static class Translator
     {
+        // ____________________________________________________________________________________________________
+        //
+        //   SMD processing & translation
+        // ____________________________________________________________________________________________________
+        //
+
         public static PacCustomAnimation Smd2Pac(SmdData untouchedSmdData,
                                                   List<string> ignoreBones,
                                                   int optimizeLevel,
@@ -25,7 +31,10 @@ namespace TiberiumFusion.Smd2Pac
             SmdData smdData = untouchedSmdData.Clone();
 
 
-            ///// Find frame for base pose subtraction
+            //
+            // Find frame for base pose subtraction
+            //
+
             SmdTimelineFrame subtractionBasePoseFrame = null;
             if (subtractionBaseSmd != null)
             {
@@ -42,20 +51,30 @@ namespace TiberiumFusion.Smd2Pac
                     throw new Exception("No frame with \"time " + subtractionBaseFrame + "\" exists within the subtraction base SMD.");
             }
             
+            
+            //
+            // Process main animation data
+            //
 
-            ///// Main animation data
             pacAnim.TimeScale = smdData.Timeline.ExpectedFrameRate; // Overall animation playback rate
 
             // The first smd frame with have an extremely high pac3 "FrameRate" due to the wacky animation rules of pac3
             // All subsequent frames with have a "FrameRate" derived from the time gap between them and the previous frame
             Print("- Processing animation frames...", 1);
             float lastSmdFrameTime = 0;
+
+            ///// Process each frame in turn
             for (int i = 0; i < smdData.Timeline.ExplicitFrames.Count; i++)
             {
                 // Finalize the SMD frame data before translating it to the pac3 anim format
                 SmdTimelineFrame smdFrame = smdData.Timeline.ExplicitFrames[i];
                 smdFrame.BakeFrame();
-                
+
+
+                //
+                // Pose subtraction
+                //
+
                 if (subtractionBasePoseFrame != null)
                 {
                     /* Pose subtraction
@@ -71,10 +90,10 @@ namespace TiberiumFusion.Smd2Pac
                      *   Studiomdl can also do this, via the `subtract` part of the $animation command. The compiled MDL can then be decompiled with Crowbar to get the subtracted SMD.
                      *   In my testing, I have found this always adds a -90 Y rotation to the root bone. I'm not sure why that happens, and whether it's a studiomdl or Crowbar bug.
                      *   Valve has kept the core level of the Source engine's math code very secret, including studiomdl, unfortunately.
-                     *   I did find a copy of the 2004 Episode 1 and 2007 SDK, though, which includes all the relevant code for subtracting animations - most crucially, it revealed Valve's inconsistencies in coordinate order that I was missing beforehand.
+                     *   I did find a copy of the 2004 Episode 1 and 2007 SDK that include studiomdl, though, which has all the relevant code for Source's animation subtraction rules - most crucially, it revealed Valve's inconsistencies in coordinate order that I was missing beforehand.
                      */
-
-                    // Copy the frame and subtract the base pose frame from it for all bones
+                    
+                    ///// Copy the frame and subtract the base pose frame from it for all bones
                     foreach (SmdBonePose subtractedBonePose in smdFrame.ExplicitBonePoses)
                     {
                         SmdBonePose subtractionBaseBonePose = null;
@@ -118,7 +137,11 @@ namespace TiberiumFusion.Smd2Pac
                     }
                 }
 
+                
+                //
                 // Frame duration
+                //
+
                 PacFrame pacFrame = new PacFrame();
                 if (i == 0)
                     pacFrame.FrameRate = 999; // We want to complete this frame as fast as possible since there's no way to change the bind pose in pac3 custom animations
@@ -135,7 +158,11 @@ namespace TiberiumFusion.Smd2Pac
                     pacFrame.FrameRate = 1.0f * deltaSmdFrameCount; // How many units this frame should take (natively seconds)
                 }
 
+                
+                //
                 // Frame bone poses
+                //
+
                 foreach (SmdBonePose smdBonePose in smdFrame.ExplicitBonePoses)
                 {
                     if (ignoreBones.Contains(smdBonePose.Bone.Name))
@@ -212,7 +239,10 @@ namespace TiberiumFusion.Smd2Pac
             }
 
             
-            ///// Optimization
+            //
+            // Optimization
+            //
+
             // We can completely omit bones that have an extremely negligible transform (and thus no perceptible visual movement)
             if (optimizeLevel >= 1)
             {
@@ -255,12 +285,17 @@ namespace TiberiumFusion.Smd2Pac
             }
 
 
+            //
             // Return subtracted SMD data for dumping
+            //
+
             if (subtractionBaseSmd != null)
                 subtractedSmdData = smdData;
             else
                 subtractedSmdData = null;
 
+
+            // Processing done
             return pacAnim;
         }
 

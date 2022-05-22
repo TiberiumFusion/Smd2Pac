@@ -9,35 +9,32 @@ namespace TiberiumFusion.Smd2Pac
 {
     public class SmdData
     {
+        // ____________________________________________________________________________________________________
+        //
+        //   Parsed SMD contents
+        // ____________________________________________________________________________________________________
+        //
+
         public int Version { get; private set; } = 0;
         public SmdSkeleton Skeleton { get; private set; }
         public SmdTimeline Timeline { get; private set; }
 
         public string SourceFilename { get; private set; }
 
-        private string ErrInvalid(string message)
-        {
-            return "Invalid SMD data. " + message;
-        }
-        private string ErrInvalid(int lineNum, string message)
-        {
-            return "Invalid SMD data at line " + lineNum + ". " + message;
-        }
-        private string ErrUnknown(string message)
-        {
-            return "Unknown SMD format . " + message;
-        }
-        private string ErrUnknown(int lineNum, string message)
-        {
-            return "Unknown SMD format at line " + lineNum + ". " + message;
-        }
 
+
+        // ____________________________________________________________________________________________________
+        //
+        //   SMD parsing
+        // ____________________________________________________________________________________________________
+        //
+        
         // Creates SmdData from an SMD file
         public static SmdData FromFile(string filepath)
         {
             return new SmdData(Path.GetFileName(filepath), File.ReadAllLines(filepath));
         }
-
+        
         public SmdData()
         {
 
@@ -46,6 +43,11 @@ namespace TiberiumFusion.Smd2Pac
         public SmdData(string sourceFilename, string[] rawLines)
         {
             SourceFilename = sourceFilename;
+
+
+            //
+            // Pre-process
+            //
 
             // Associate line numbers with source data
             List<NumberedLine> lines = new List<NumberedLine>();
@@ -58,7 +60,11 @@ namespace TiberiumFusion.Smd2Pac
             if (lines.Count == 0)
                 throw new Exception("SMD file has no data.");
 
+
+            //
             // Header check
+            //
+
             // This is extremely minimal for Valve's SMD format. It's just the "version" tag.
             string[] rawVersionLine = lines[0].Text.Trim().Split(' ');
             if (string.IsNullOrWhiteSpace(rawVersionLine[0]) || rawVersionLine[0] != "version")
@@ -73,7 +79,11 @@ namespace TiberiumFusion.Smd2Pac
             List<NumberedLine> dbSkeleton = null;
             // We don't need the "triangles" or "vertexanimation" data blocks
 
+
+            //
             // Extract relevant data blocks
+            //
+
             bool inBlock = false;
             string inBlockName = null;
             int inBlockStart = -1;
@@ -121,9 +131,14 @@ namespace TiberiumFusion.Smd2Pac
                 throw new Exception(ErrInvalid(dbSkeleton[0].LineNumber, "\"skeleton\" data block is empty."));
 
 
-            ///// Process node block to build skeleton hierarchy
+            //
+            // Process skeleton node block to build skeleton hierarchy
+            //
+
             // Bone definition order does NOT have to be sequential, so we'll set up the parenting AFTER discovering all bones
             // Crowbar always writes bones sequentially, but other software might be lazy and write them out of order
+
+            ///// Discover bones
             List<SmdBone> bones = new List<SmdBone>();
             for (int i = 1; i < dbNodes.Count - 1; i++)
             {
@@ -153,13 +168,13 @@ namespace TiberiumFusion.Smd2Pac
                 bones.Add(bone);
             }
             
-            // Find and verify the root bone
+            ///// Find and verify the root bone
             List<SmdBone> rootBones = bones.Where(b => b.ParentID == -1).ToList();
             if (rootBones.Count > 1)
                 throw new Exception(ErrInvalid(rootBones[1].SmdSourceLine.LineNumber, "Invalid skeleton hierarchy. Only be one root bone can exist."));
             SmdBone rootBone = rootBones[0];
 
-            // Create hierarchy
+            ///// Create hierarchy
             List<SmdBone> orphanBonesLeft = new List<SmdBone>(bones);
             orphanBonesLeft.Remove(rootBone);
             void buildHierarchy(SmdBone self, List<SmdBone> orphanBones)
@@ -188,9 +203,13 @@ namespace TiberiumFusion.Smd2Pac
                 throw new Exception(ErrInvalid(message.TrimEnd('\n')));
             }
 
-            // Create skeleton object
+            ///// Create skeleton object
             Skeleton = new SmdSkeleton(bones, rootBone);
 
+
+            //
+            // Build animation timeline
+            //
 
             ///// Process skeleton block to find animations frames
             List<List<NumberedLine>> timeBlocks = new List<List<NumberedLine>>();
@@ -234,9 +253,10 @@ namespace TiberiumFusion.Smd2Pac
             }
             timeBlocks.Add(buildTimeBlock);
 
-            // Create timeline for animation
+            ///// Create timeline for animation
             Timeline = new SmdTimeline(Skeleton);
-            // Add all explicit frames
+
+            ///// Add all explicit frames
             foreach (List<NumberedLine> timeBlock in timeBlocks)
             {
                 SmdTimelineFrame frame = new SmdTimelineFrame();
@@ -298,7 +318,7 @@ namespace TiberiumFusion.Smd2Pac
                 Timeline.AddFrame(frame); // Frames will be stored sequentially as they were defined in the SDM and any pose interpolation will occur on demand if needed
             }
 
-            Print("- " + bones.Count + " bones, " + Timeline.ExplicitFrames.Count + " frames of animation", 1);
+            ProgramPrint("- " + bones.Count + " bones, " + Timeline.ExplicitFrames.Count + " frames of animation", 1);
         }
 
         // Writes this SmdData back into ascii lines
@@ -359,7 +379,26 @@ namespace TiberiumFusion.Smd2Pac
             return clone;
         }
 
-        private static void Print(string message, int indentLevel = 0, string bullet = null)
+
+        private string ErrInvalid(string message)
+        {
+            return "Invalid SMD data. " + message;
+        }
+        private string ErrInvalid(int lineNum, string message)
+        {
+            return "Invalid SMD data at line " + lineNum + ". " + message;
+        }
+        private string ErrUnknown(string message)
+        {
+            return "Unknown SMD format . " + message;
+        }
+        private string ErrUnknown(int lineNum, string message)
+        {
+            return "Unknown SMD format at line " + lineNum + ". " + message;
+        }
+
+
+        private static void ProgramPrint(string message, int indentLevel = 0, string bullet = null)
         {
             Program.Print(message, indentLevel, bullet);
         }

@@ -11,7 +11,7 @@ namespace TiberiumFusion.Smd2Pac
         public SmdSkeleton TargetSkeleton { get; private set; }
         public List<SmdTimelineFrame> ExplicitFrames { get; private set; } = new List<SmdTimelineFrame>(); // Only time blocks which are explcitiy defined in the SMD file
         public float ExpectedFrameRate = 30.0f; // In frame per second. This would be the value you'd use with the `fps` option in your $sequence commands
-                                                // Gmod (or source in general) default to 30 fps sequences unless otherwise specified, but the user will have to choose the correct framerate using their qc file
+                                                  // Gmod (or source in general) defaults to 30 fps sequences unless otherwise specified, but the user will have to choose the correct framerate specified in their qc file
 
         public SmdTimeline()
         {

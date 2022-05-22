@@ -22,6 +22,6 @@ namespace TiberiumFusion.Smd2Pac
         public float RF = 0f; // pitch
         public float RR = 0f; // yaw
         public float RU = 0f; // roll
-            // Yes these are out of order because either Source is weird
+            // Yes these are out of order because either Source is weird or pac is weird
     }
 }

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace TiberiumFusion.Smd2Pac
 {
-    // Like most gmod addons, pac uses absolutely ass backwards naming and unit conventions
     public class PacFrame
     {
         [JsonProperty(Order = 1)]

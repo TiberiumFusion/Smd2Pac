@@ -9,6 +9,12 @@ namespace TiberiumFusion.Smd2Pac
 {
     public class LaunchArgs
     {
+        // ____________________________________________________________________________________________________
+        //
+        //   Argument values and specification
+        // ____________________________________________________________________________________________________
+        //
+
         public string SourceSmdFilePath { get; private set; } = null;
         public bool DeepSmdDirPath { get; private set; } = false;
         public string OutputPacAnimDataPath { get; private set; } = null;
@@ -60,6 +66,13 @@ namespace TiberiumFusion.Smd2Pac
 
         private const string ExceptionMessageNoSmd = "You must specify an input file, either as the very first or last argument, or with the --smd argument.\nYou must use the --smd argument if you also are using --ignore-bones.\nExample: smd2pac.exe \"\\path\\to\\some anims.smd\"\nExample: smd2pac.exe --smd \"path\\to\\some other anims.smd\"";
 
+
+        // ____________________________________________________________________________________________________
+        //
+        //   Arguments parsing
+        // ____________________________________________________________________________________________________
+        //
+        
         public LaunchArgs(string[] rawArgs)
         {
             if (rawArgs.Length == 0)
@@ -74,8 +87,12 @@ namespace TiberiumFusion.Smd2Pac
                 SourceSmdFilePath = parseArgs[0];
                 parseArgs.RemoveAt(0);
             }
-            
-            // Check the rest like usual
+
+
+            //
+            // Parse all arguments
+            //
+
             for (int i = 0; i < parseArgs.Count; i++)
             {
                 bool rewindForNextArg = false;
@@ -211,8 +228,11 @@ namespace TiberiumFusion.Smd2Pac
                     i--;
             }
 
-            ///// Defaults and final validation
-            
+
+            //
+            // Defaults and final validation
+            //
+
             // Smd file
             if (SourceSmdFilePath == null)
                 throw new Exception(ExceptionMessageNoSmd);

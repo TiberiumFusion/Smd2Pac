@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace TiberiumFusion.Smd2Pac
 {
+    // Basic Vector3, XNA style
     public struct Vector3
     {
         public float X;

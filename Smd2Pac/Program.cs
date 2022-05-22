@@ -17,7 +17,13 @@ namespace TiberiumFusion.Smd2Pac
             Version ver = Assembly.GetExecutingAssembly().GetName().Version;
             Print("\n-[-----     Smd2Pac " + ver.ToString() + "     -----]-");
 
-            ///// Input reading
+
+            // ____________________________________________________________________________________________________
+            //
+            //   Input reading
+            // ____________________________________________________________________________________________________
+            //
+
             LaunchArgs launchArgs = null;
             try
             {
@@ -34,7 +40,13 @@ namespace TiberiumFusion.Smd2Pac
             if (launchArgs.UnknownArguments.Count > 0)
                 Print("");
 
-            ///// Base SMD pose parsing
+
+            // ____________________________________________________________________________________________________
+            //
+            //   Base SMD pose parsing
+            // ____________________________________________________________________________________________________
+            //
+
             SmdData basePoseSmdData = null;
             FileInfo basePoseSmdFile = null;
             if (launchArgs.SubtractionBaseSmd != null)
@@ -59,7 +71,13 @@ namespace TiberiumFusion.Smd2Pac
                 }
             }
 
-            ///// Find SMD files to process
+            
+            // ____________________________________________________________________________________________________
+            //
+            //   Find and process SMD files
+            // ____________________________________________________________________________________________________
+            //
+
             List<string> smdFiles = new List<string>();
             if (Directory.Exists(launchArgs.SourceSmdFilePath))
             {
@@ -77,7 +95,11 @@ namespace TiberiumFusion.Smd2Pac
             {
                 string smdFilename = smdFiles[i];
 
-                ///// SMD parsing
+
+                //
+                // SMD parsing
+                //
+
                 Print("\nReading SMD file: \"" + smdFilename + "\" (" + (i + 1) + "/" + smdFiles.Count + ")");
                 SmdData smdData = null;
                 try
@@ -97,7 +119,11 @@ namespace TiberiumFusion.Smd2Pac
                     return;
                 }
 
-                ///// Translation to PAC3 animation
+                
+                //
+                // Translation to PAC3 animation
+                //
+
                 Print("Creating PAC3 animation data");
                 PacCustomAnimation pacCustomAnim = null;
                 SmdData subtractedSmdData = null;
@@ -119,7 +145,11 @@ namespace TiberiumFusion.Smd2Pac
                     return;
                 }
 
-                ///// Subtracted SMD data dump to file
+
+                //
+                // Dump subtracted SMD data to file
+                //
+
                 if (launchArgs.DumpSubtractedSmd && subtractedSmdData != null)
                 {
                     string outputDir = Path.Combine(Path.GetDirectoryName(smdFilename), "subtracted smds");
@@ -137,7 +167,11 @@ namespace TiberiumFusion.Smd2Pac
                     }
                 }
 
-                ///// Write PAC3 anim data interchange json output
+
+                //
+                // Write PAC3 anim data interchange json output
+                //
+
                 string outputFilename = launchArgs.OutputPacAnimDataPath;
                 if (outputFilename == null)
                 {

@@ -27,7 +27,7 @@ namespace TiberiumFusion.Smd2Pac
         }
 
         // SMD allows frames to omit explicit bone poses for bones that havent actually moved since the last frame.
-        // This method returns a "baked" timeline frame of itself that includes effective pose data for ALL bones
+        // This method returns a "baked" timeline frame of itself that includes effective pose data for ALL bones as explicit values
         public SmdTimelineFrame GetBakedFrame()
         {
             // Frame 0 should always define a pose for every bone

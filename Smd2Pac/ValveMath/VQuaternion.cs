@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace TiberiumFusion.Smd2Pac.ValveMath
 {
     // Quaternion with functions from the 2007 SDK
+    // Original Valve comments are preserved alongside my own comments
     public struct VQuaternion
     {
         /* Source type layout reference
