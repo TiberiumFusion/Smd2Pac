@@ -19,7 +19,7 @@ namespace TiberiumFusion.Smd2Pac
         public bool DeepSmdDirPath { get; private set; } = false;
         public string OutputPacAnimDataPath { get; private set; } = null;
         public bool EscapeOutputPacAnimData { get; private set; } = true;
-        public int PacAnimDataOptimizeLevel { get; private set; } = 1;
+        public int PacAnimDataOptimizeLevel { get; private set; } = 0;
         public List<string> IgnoreBones { get; private set; } = new List<string>();
         public Dictionary<string, Tuple<Vector3, Vector3>> BoneFixups { get; private set; } = new Dictionary<string, Tuple<Vector3, Vector3>>();
         public string SubtractionBaseSmd { get; private set; } = null;
