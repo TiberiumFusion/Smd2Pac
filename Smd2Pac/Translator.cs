@@ -238,13 +238,15 @@ namespace TiberiumFusion.Smd2Pac
                 lastSmdFrameTime = smdFrame.FrameTime;
             }
 
-            
+
             //
             // Optimization
             //
 
-            // We can completely omit bones that have an extremely negligible transform (and thus no perceptible visual movement)
-            if (optimizeLevel >= 1)
+            // For subtracted SMDs, we can completely omit bones that have an extremely negligible transform (and thus no perceptible visual movement)
+            // We will find bones which have or are very close to a 0,0,0 0,0,0 transform for the entire animation, and thus will have no perceptible change in an additive animation
+            // We can then remove these bones from every pac frame in the pac animation
+            if (subtractionBaseSmd != null && optimizeLevel >= 1)
             {
                 // Get all bones that made it into the pac data
                 HashSet<string> allPacBones = new HashSet<string>();
@@ -252,8 +254,11 @@ namespace TiberiumFusion.Smd2Pac
                     foreach (string boneName in frame.BoneInfo.Keys)
                         allPacBones.Add(boneName);
 
-                // Find bones which have or are very close to a 0,0,0 0,0,0 transform for the entire animation, and thus will have no visual effect (pac3 animations are additive)
-                List<string> identityBones = new List<string>();
+                float thresholdT = 0.0001f; // translation magnitude
+                float thresholdR = 0.0005f; // individual axis rotation (in DEGREES)
+
+                List<string> nearIdentityBones = new List<string>();
+
                 foreach (string pacBoneName in allPacBones)
                 {
                     bool nearIdentity = true;
@@ -262,7 +267,7 @@ namespace TiberiumFusion.Smd2Pac
                         PacBonePose pose = null;
                         if (frame.BoneInfo.TryGetValue(pacBoneName, out pose))
                         {
-                            if (new Vector3(pose.MF, pose.MR, pose.MU).Length() > 0.0001 || pose.RF > 0.0005 || pose.RR > 0.0005 || pose.RU > 0.0005)
+                            if (new Vector3(pose.MF, pose.MR, pose.MU).Length() > thresholdT || pose.RF > thresholdR || pose.RR > thresholdR || pose.RU > thresholdR)
                             {
                                 nearIdentity = false;
                                 break;
@@ -271,11 +276,11 @@ namespace TiberiumFusion.Smd2Pac
                     }
 
                     if (nearIdentity)
-                        identityBones.Add(pacBoneName);
+                        nearIdentityBones.Add(pacBoneName);
                 }
 
                 // Remove those bones from all frames of the animation
-                foreach (string pacBoneName in identityBones)
+                foreach (string pacBoneName in nearIdentityBones)
                 {
                     foreach (PacFrame frame in pacAnim.FrameData)
                         frame.BoneInfo.Remove(pacBoneName);
