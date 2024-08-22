@@ -152,8 +152,8 @@ namespace TiberiumFusion.Smd2Pac
             {
                 NumberedLine line = dbNodes[i];
                 string linetext = line.Text.Trim();
-
-                string[] linetextParts = linetext.Split(' '); // This is ok because source engine bones cannot have spaces in their names
+                
+                string[] linetextParts = Helpers.SplitStringOnWhitespaceWithQuotes(linetext); // Some MDLs evidently support bone names with spaces, resuting in SMD bone lines with quoted names like this:  0 "bone name with spaces" -1
                 if (linetextParts.Length != 3)
                     throw new Exception(ErrInvalid(line.LineNumber, "Bone definition is an invalid format."));
                 

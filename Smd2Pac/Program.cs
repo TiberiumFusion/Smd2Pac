@@ -14,6 +14,12 @@ namespace TiberiumFusion.Smd2Pac
 {
     public class Program
     {
+#if DEBUG
+        internal static readonly bool CatchUnhandledExceptions = false;
+#else
+        internal static readonly bool CatchUnhandledExceptions = true;
+#endif
+
         static void Main(string[] args)
         {
             Version ver = Assembly.GetExecutingAssembly().GetName().Version;
@@ -37,7 +43,7 @@ namespace TiberiumFusion.Smd2Pac
                 GlobalConfiguration.ParseNumericStringsWithSystemLocale = launchArgs.ParseWithSystemLocale;
                 GlobalConfiguration.WriteNumericStringsWithSystemLocale = launchArgs.WriteWithSystemLocale;
             }
-            catch (Exception e)
+            catch (Exception e) when (CatchUnhandledExceptions)
             {
                 Print("[!!!] Invalid arguments [!!!]");
                 Print(e.Message, 1, "- ");
@@ -65,13 +71,13 @@ namespace TiberiumFusion.Smd2Pac
                     basePoseSmdData = SmdData.FromFile(launchArgs.SubtractionBaseSmd);
                     basePoseSmdFile = new FileInfo(launchArgs.SubtractionBaseSmd);
                 }
-                catch (Exception e) when (e is IOException || e is FileNotFoundException || e is DirectoryNotFoundException || e is PathTooLongException || e is ArgumentException)
+                catch (Exception e) when (CatchUnhandledExceptions && (e is IOException || e is FileNotFoundException || e is DirectoryNotFoundException || e is PathTooLongException || e is ArgumentException))
                 {
                     Print("[!!!] Error reading SMD file [!!!]");
                     Print(e.Message, 1, "- ");
                     return;
                 }
-                catch (Exception e)
+                catch (Exception e) when (CatchUnhandledExceptions)
                 {
                     Print("[!!!] Error parsing SMD file [!!!]");
                     Print(e.Message, 1, "- ");
@@ -114,13 +120,13 @@ namespace TiberiumFusion.Smd2Pac
                 {
                     smdData = SmdData.FromFile(smdFilename);
                 }
-                catch (Exception e) when (e is IOException || e is FileNotFoundException || e is DirectoryNotFoundException || e is PathTooLongException || e is ArgumentException)
+                catch (Exception e) when (CatchUnhandledExceptions && (e is IOException || e is FileNotFoundException || e is DirectoryNotFoundException || e is PathTooLongException || e is ArgumentException))
                 {
                     Print("[!!!] Error reading SMD file [!!!]");
                     Print(e.Message, 1, "- ");
                     return;
                 }
-                catch (Exception e)
+                catch (Exception e) when (CatchUnhandledExceptions)
                 {
                     Print("[!!!] Error parsing SMD file [!!!]");
                     Print(e.Message, 1, "- ");
@@ -146,7 +152,7 @@ namespace TiberiumFusion.Smd2Pac
                                                        launchArgs.HideWarnings,
                                                        out subtractedSmdData);
                 }
-                catch (Exception e)
+                catch (Exception e) when (CatchUnhandledExceptions)
                 {
                     Print("[!!!] Error translating SMD sequence to PAC3 custom animation [!!!]");
                     Print(e.Message, 1, "- ");
@@ -168,7 +174,7 @@ namespace TiberiumFusion.Smd2Pac
                     {
                         File.WriteAllLines(subtractedSmdDumpFilename, subtractedSmdData.ToLines(), Encoding.ASCII);
                     }
-                    catch (Exception e)
+                    catch (Exception e) when (CatchUnhandledExceptions)
                     {
                         Print("[!!!] Error writing subtracted SMD file [!!!]");
                         Print(e.Message, 1, "- ");
@@ -208,7 +214,7 @@ namespace TiberiumFusion.Smd2Pac
                     File.WriteAllText(outputFilename, pacAnimJson);
                     Print("File complete.");
                 }
-                catch (Exception e)
+                catch (Exception e) when (CatchUnhandledExceptions)
                 {
                     Print("[!!!] Error writing PAC3 animation data to file [!!!]");
                     Print(e.Message, 1, "- ");

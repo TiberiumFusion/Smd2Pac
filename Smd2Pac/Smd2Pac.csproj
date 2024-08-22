@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GlobalConfiguration.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="LaunchArgs.cs" />
     <Compile Include="MathHelper.cs" />
     <Compile Include="NoScientificNotationBS.cs" />
